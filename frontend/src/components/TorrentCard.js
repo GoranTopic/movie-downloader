@@ -2,82 +2,128 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import CardMedia from '@mui/material/CardMedia';
-import IconButton from '@mui/material/IconButton';
+//import CardMedia from '@mui/material/CardMedia';
 import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import Radio from '@mui/material/Radio';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import FormControl from '@mui/material/FormControl';
+import LinearProgress from '@mui/material/LinearProgress';
+import CircularProgress from '@mui/material/CircularProgress';
 
+export default function TorrentCard({ torrent }) {
 
-export default function SuggestionCard({ suggestion, selectTorrent }) {
+    // get the number of minutes from the env file
+    const minutesToDeletetion = process.env.MINUTES_TO_DELETION || 20;
+    console.log('minutesToDeletetion', minutesToDeletetion)
+    // take number of minutes and transform it to seconds
+    const minutesToSeconds = minutes => minutes * 60;
+    // get the number of seconds from the number of minutes
+    const secondToDeletetion = minutesToSeconds(minutesToDeletetion);
 
-    const choose_default_torrent = suggestion => {
-        // this function will choses the torrent with the 1080p quality if there is as default
-        // else it will chose the first torrent in the list
-        let default_torrent = suggestion.torrents[0];
-        for (let torrent of suggestion.torrents) {
-            if (torrent.quality === "1080p") {
-                return default_torrent = torrent;
-            }
-        }
-        return default_torrent;
+    // take the unitial time when the torrent was added and the time now
+    // return the percentage of time that has passed
+    const getPercentageOfTimePassed = (timeAdded, timeNow, secondToDeletetion) => {
+        if(timeNow >= timeAdded + secondToDeletetion) return 100
+        let timePassed = timeNow - timeAdded;
+        let percentage = timePassed / secondToDeletetion * 100;
+        return percentage;
     }
 
-    // the torrent url to pass to the transmission client
-    const [torrentUrl, setTorrentUrl] = React.useState(choose_default_torrent(suggestion).url);
-    // set the 1080 torrent as the default as soon as it loads
+    const [secondsPassed, setSecondsPassed] = React.useState(Math.floor(Date.now() / 1000));
+    React.useEffect(() => {
+        // set interval to update the percentage of time passed
+        const interval = setInterval(() => {
+            setSecondsPassed(secondsPassed => secondsPassed + 1);
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
-    const handleChange = event => {
-        setTorrentUrl(event.target.value);
+    const handleDownload = event => {
+        //setIsDone(event.target.value);
     };
+    console.log('torrent from Card', torrent)
+
+    function LinearProgressWithLabel(props) {
+        return (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box sx={{ minWidth: 35 }}>
+                    <Typography variant="body2" color="text.secondary">{`${Math.round(
+                        props.value,
+                    )}%`}</Typography>
+                </Box>
+                <Box sx={{ width: '100%', mr: 1 }}>
+                    <LinearProgress variant="determinate" {...props} />
+                </Box>
+            </Box>
+        );
+    }
+
+    // this function tranfroms from unix time to human readable time
+    const unixTimeToHumanReadable = unixTime => {
+        let date = new Date(unixTime * 1000);
+        let hours = date.getHours();
+        let minutes = "0" + date.getMinutes();
+        let seconds = "0" + date.getSeconds();
+        let formattedTime = hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
+        return formattedTime;
+    }
 
     return (
-        <Card sx={{ display: 'flex' }}>
-            <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                <CardMedia
+        <Card sx={{ display: 'flex', padding: 1, marginY: 0.2, marginX: "6%" }}>
+            <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
+                {/*
+                <CardMedia // this is the movie poster
                     component="img"
                     sx={{ width: 51 }}
                     image={suggestion.small_cover_image}
                     alt={suggestion.title}
                 />
-                <CardContent sx={{ flex: '1 0 auto' }}>
-                    <Typography component="div" > {suggestion.title} </Typography>
-                    <Typography variant="subtitle1" color="text.secondary" component="div">
-                        ({suggestion.year}) - {suggestion.rating} - {suggestion.language} -
-                        {suggestion.genres ? suggestion.genres.map(genre => genre + " ") : ""}
-                    </Typography>
-                </CardContent>
-                {/* add imbd icon button link */}
-                <FormControl>
-                    <Box sx={{ display: 'flex', alignSelf: 'right', alignItems: 'center', pl: 1, pb: 1 }}>
-                        <RadioGroup column aria-label="quality" name="quality"
-                            onChange={e => handleChange(e)}
-                            defaultValue={torrentUrl}
-                            aria-labelledby="demo-form-control-label-placement" >
-                            {suggestion.torrents.map(torrent =>
-                                <FormControlLabel
-                                    key={torrent.url}
-                                    value={torrent.url}
-                                    size="small"
-                                    label={<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <Typography variant="subtitle2" fontSize={16} p={0.2}> {torrent.type} </Typography>
-                                        <Typography variant="subtitle2" fontSize={16} p={0.2}> {torrent.quality} </Typography>
-                                        <Typography variant="subtitle2" fontSize={16} p={0.2}> {torrent.size} </Typography>
-                                    </Box>}
-                                    labelPlacement="left"
-                                    control={<Radio />}
-                                />
-                            )}
-                        </RadioGroup>
-                        <IconButton aria-label="download" onClick={() => selectTorrent(torrentUrl)}>
-                            <FileDownloadIcon sx={{ height: 38, width: 38 }} />
+                */}
+                <CardContent sx={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
+                    <Box // this is the torrent info and progress bar
+                        sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        <Box // torrent info
+                            sx={{ display: 'flex', flexDirection: 'column' }}>
+                            <Typography component="div" > {torrent.name} </Typography>
+                            <Typography marginLeft={0.5} variant="subtitle1" color="text.secondary" component="div">
+                                peers: {torrent.peersSendingToUs} seeds: {torrent.peersGettingFromUs} Rate: {torrent.rateDownload} eta: {unixTimeToHumanReadable(torrent.eta)}
+                            </Typography>
+                        </Box>
+                        <Box // progress bar
+                            sx={{ width: '100%' }}>
+                            <LinearProgressWithLabel value={torrent.percentDone * 100} />
+                        </Box>
+                        <Typography marginLeft={0.5} variant="subtitle2" color="text.secondary" component="div">
+                            down: {torrent.downloadedEver} up: {torrent.uploadedEver} total: {torrent.totalSize}
+                        </Typography>
+                    </Box>
+                    <Box // this box is circular remove timer
+                        sx={{ display: 'flex', flexDirection: 'column' }} >
+                        <CircularProgress
+                            marginLeft={0.5}
+                            size={50}
+                            variant="determinate"
+                            color="secondary"
+                            value={getPercentageOfTimePassed(torrent.addedDate, secondsPassed, secondToDeletetion)}
+                        />
+                        <Box sx={{
+                            // move uppwars relaviely to the parent
+                            position: 'absolute',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }} >
+                            <Typography variant="caption" component="div" color="text.secondary">
+                                {`${unixTimeToHumanReadable(secondToDeletetion + torrent.addedDate - secondsPassed)}`}
+                            </Typography>
+                        </Box>
+                        <IconButton
+                            disabled={torrent.percentDone !== 1}
+                            onClick={handleDownload} aria-label="download" size="large">
+                            <FileDownloadIcon
+                                color='primery' />
                         </IconButton>
                     </Box>
-                </FormControl>
+                </CardContent>
             </Box>
-        </Card>
+        </Card >
     );
 }

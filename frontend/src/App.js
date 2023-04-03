@@ -11,7 +11,9 @@ function App() {
     return (
         <NoSsr>
             <MuiThemeProvider theme={lightTheme}>
-                <Box margin={'5%'} justifyContent='center' alignItems='center' >
+                <Box margin={'5%'}
+                    justifyContent='center'
+                    alignItems='center' >
                     <MovieSearchBar />
                     <TransmisionList />
                 </Box>

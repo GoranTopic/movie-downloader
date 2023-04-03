@@ -4,7 +4,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import CircularProgress from '@mui/material/CircularProgress';
 import { query_movie_suggestions } from '../yify-cli.js';
 import SuggestionCard from './SuggestionCard.js';
-//import { transmision_add_torrent } from './transmission-client.js';
+import { transmision_add_torrent } from '../transmission-cli.js';
 
 export default function MovieSearchBar() {
     /* this is the companent that will be used to search for a movie using the yify api
@@ -32,7 +32,12 @@ export default function MovieSearchBar() {
                 // query suggestions
                 let suggestions = await query_movie_suggestions(textValue);
                 //console.log("got search suggestions:", quotes);
-                setSuggestions([...suggestions]);
+                setSuggestions(suggestions);
+                    // get only the suggestions that are not already in the list
+                    //let suggestions_id = s.map(s => s.id);
+                    //let new_suggestions = suggestions.filter(s => !suggestions_id.includes(s.id));
+                    //return [...s, ...new_suggestions];
+                //});
                 setOpen(true);
                 setLoading(false);
             }
@@ -42,20 +47,28 @@ export default function MovieSearchBar() {
         // every time the textValue changes
     }, [textValue]);
 
-    const selectTorrent = torrent_url => {
+    const selectTorrent = async (torrent, quality) => {
         /* this function uses the selected movie suggestion to download the torrent file
          * and pass it to transmission-remote client*/
+        // clear the search bar
         setTextValue('');
+        // close the search bar
         setOpen(false);
+        // start loading
+        setLoading(true);
+        // clear the suggestions
         setSuggestions([]);
-        console.log("torret_url", torrent_url);
-        //transmision_add_torrent(torrent_url);
+        console.log("torret:", torrent);
+        console.log("quality:", quality);
+        // send the torrent to the transmission server to download
+        let res = await transmision_add_torrent(torrent, quality);
+        // stop loading
+        setLoading(false);
     }
-
 
     return <>
         <Autocomplete
-            sx={{ marginX: "5%" }}
+            sx={{ marginX: "5%", marginTop: "5%" }}
             id="Stock Search"
             autoHighlight
             open={open}

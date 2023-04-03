@@ -5,12 +5,13 @@ let transmission = new Transmission({
     port: 9091
 })
 
-
 const add_torrent = async torrent_url =>
     new Promise(async (resolve, reject) =>
         await transmission.addUrl(
             torrent_url, // add torrent
-            { "download-dir": "/var/www/.movies" },
+            { 
+                //"download-dir": "/home/telix/Downloads"
+            },
             (err, res) => {
                 if (err) {
                     console.error(err);
@@ -63,7 +64,6 @@ const get_torrents =  async () =>
             }
         )
     )
-
 
 
 // Get torrent state

@@ -27,11 +27,15 @@ export default function SuggestionCard({ suggestion, selectTorrent }) {
     }
 
     // the torrent url to pass to the transmission client
-    const [torrentUrl, setTorrentUrl] = React.useState(choose_default_torrent(suggestion).url);
+    const [torrent, setTorrent] = React.useState(choose_default_torrent(suggestion));
+    const [url, setUrl] = React.useState(choose_default_torrent(suggestion).url);
     // set the 1080 torrent as the default as soon as it loads
 
     const handleChange = event => {
-        setTorrentUrl(event.target.value);
+        console.log('value:', event.target.value);
+        let torrent = suggestion.torrents.filter(torrent => torrent.url === event.target.value)[0];
+        setTorrent(torrent);
+        setUrl(torrent.url);
     };
 
     return (
@@ -53,10 +57,9 @@ export default function SuggestionCard({ suggestion, selectTorrent }) {
                 {/* add imbd icon button link */}
                 <FormControl>
                     <Box sx={{ display: 'flex', alignSelf: 'right', alignItems: 'center', pl: 1, pb: 1 }}>
-                        <RadioGroup column aria-label="quality" name="quality"
+                        <RadioGroup aria-label="quality" name="quality"
                             onChange={e => handleChange(e)}
-                            defaultValue={torrentUrl}
-                            aria-labelledby="demo-form-control-label-placement" >
+                            defaultValue={choose_default_torrent(suggestion).url}>
                             {suggestion.torrents.map(torrent =>
                                 <FormControlLabel
                                     key={torrent.url}
@@ -67,12 +70,13 @@ export default function SuggestionCard({ suggestion, selectTorrent }) {
                                         <Typography variant="subtitle2" fontSize={16} p={0.2}> {torrent.quality} </Typography>
                                         <Typography variant="subtitle2" fontSize={16} p={0.2}> {torrent.size} </Typography>
                                     </Box>}
-                                    labelPlacement="left"
                                     control={<Radio />}
                                 />
                             )}
                         </RadioGroup>
-                        <IconButton aria-label="download" onClick={() => selectTorrent(torrentUrl)}>
+                        <IconButton 
+                            aria-label="download" 
+                            onClick={() => selectTorrent(suggestion, torrent)}>
                             <FileDownloadIcon sx={{ height: 38, width: 38 }} />
                         </IconButton>
                     </Box>

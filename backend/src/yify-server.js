@@ -1,18 +1,24 @@
 import axios from 'axios';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+var endpoint = process.env.YIFY || 'https://yts.lt/api/v2/';
 
 const get_torrent = async (movie_id, quality) =>
+  /* with the given movie_id and quality
+  this function will query the yify api for the torrent
+  return the torrent object */
   await axios
-    .get(`${cors_proxy}/${endpoint}/list_movies.json`, {
+    .get(`${endpoint}/movie_details.json`, {
       params: {
         movie_id: movie_id,
-        with_images: true,
       },
-      headers: { token } // token for the cors proxy
     })
     .then(response => {
-      let movie = response.data.movie;
+      let movie = response.data.data.movie;
       let torrent = movie.torrents.filter(
-        t => t.quality === quality
+        t => t.hash === quality.hash
       )[0]
       return torrent
     })
