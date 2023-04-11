@@ -31,9 +31,9 @@ app.use(bodyParser.json());
 // this is the route that will check it there is token in the request
 app.use((req, res, next) => {
     // check header for token
-    var token = req.headers['x-access-token'];
+    var token = req.headers['token'];
     // decode token
-    if (token !== accepted_token) { // verify secret token
+    if (token === accepted_token) { // verify secret token
         return next();
     } else // if token is not valid, return error
         return res.send('Silly hacker, tricks are for kids...'); 

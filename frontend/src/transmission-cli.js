@@ -5,7 +5,8 @@ let server = process.env.REACT_APP_TRANSMISSION_SERVER || 'http://localhost:4237
 // super secret token, don't share =P 
 let token = process.env.REACT_APP_TRANSMISSION_TOKEN || '123456789';
 
-console.log(server, token);
+// set headers to axios 
+axios.defaults.headers.common['token'] = token;
 
 const transmision_add_torrent = async (suggestion, torrent) => {
   // this function will add a torrent to the transmission server
@@ -14,7 +15,6 @@ const transmision_add_torrent = async (suggestion, torrent) => {
   let res = await axios.post(`${server}/yify/add`, {
     movie_id: suggestion.id,
     quality: torrent,
-    token: token,
   })
   if (res.data.status === 'ok')
     return res.data.id;
@@ -26,9 +26,7 @@ const query_status = async () =>
   // this function will query the transmission server for the list of torrents
   // and the memory usage
   await axios
-    .get(`${server}/status`, {
-      token: token,
-    })
+    .get(`${server}/status`)
     .then(res => res.data)
     .catch(err => console.log(err))
 
