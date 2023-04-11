@@ -1,28 +1,50 @@
 import os from 'os';
 import checkDiskSpace from 'check-disk-space'
-import { memoryUsage } from 'process';
 
 let path = os.platform() === 'win32' ? 'c:' : '/';
-// only 20% of the disk space can be used
-let percentage = 0.2;
+// only 80% of the disk space can be used
+let percentage = 0.8;
 
-const get_disk_left = async () => await checkDiskSpace('/')
-    // get the free space
-    .then(diskSpace => {
-        //remove the percentage of the disk space that is want to alway be free
-        const memory_buffer = diskSpace.size * percentage;
+let total_disk_space, claimed_disk_space, used_disk_space;
+
+// calcualte the total disk space that can be used
+const calc_free_memory = async () => {
+    // for evry torrent get the total 
+    total_disk_space = await (await checkDiskSpace('/')).free * percentage;
+    console.log('total_disk_space:', total_disk_space);
+    return total_disk_space;
+}
+
+total_disk_space = await calc_free_memory();
+
+const get_mem_stats = async torrents => {
+    // for every torrent get the total of bytes that is used
+    if (torrents) {
+        // calcualte the claimed disk space
+        claimed_disk_space = torrents.reduce((acc, torrent) => {
+            acc += torrent.totalSize;
+            return acc;
+        }, 0);
+        // calcualte the claimed disk space
+        used_disk_space = torrents.reduce((acc, torrent) => {
+            acc += torrent.downloadedEver;
+            return acc;
+        }, 0);
+        // return the stats
         return {
-            free_bytes: parseInt(diskSpace.free - memory_buffer),
-            free_human: parseInt((diskSpace.free - memory_buffer) / 1000000000) + ' GB',
-            total_byte: parseInt(diskSpace.size - memory_buffer),
-            total_human: parseInt((diskSpace.size - memory_buffer) / 1000000000) + ' GB',
-        }
-    })
+            used: used_disk_space,
+            claimed: claimed_disk_space,
+            total: total_disk_space
+        };
+    } else
+        return null
+}
 
 const check_memeory = async size_bytes => {
     // check if there is enough memory left
-    let memory_left = await get_disk_left();
-    return memory_left.free_bytes < size_bytes;
+    // calcualte the free memory
+    let free_memory = total_disk_space - claimed_disk_space;
+    return free_memory < size_bytes;
 }
 
-export { get_disk_left, check_memeory }
+export { get_mem_stats, check_memeory, calc_free_memory }

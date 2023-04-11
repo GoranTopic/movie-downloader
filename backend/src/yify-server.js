@@ -5,7 +5,7 @@ dotenv.config();
 
 var endpoint = process.env.YIFY || 'https://yts.lt/api/v2/';
 
-const get_torrent = async (movie_id, quality) =>
+const query_movie = async movie_id =>
   /* with the given movie_id and quality
   this function will query the yify api for the torrent
   return the torrent object */
@@ -15,13 +15,16 @@ const get_torrent = async (movie_id, quality) =>
         movie_id: movie_id,
       },
     })
-    .then(response => {
-      let movie = response.data.data.movie;
-      let torrent = movie.torrents.filter(
-        t => t.hash === quality.hash
-      )[0]
-      return torrent
-    })
+    // unpack the response
+    .then(response => response.data.data.movie)
     .catch(e => console.error(e))
 
-export { get_torrent }
+const get_torrent = (movie, quality) =>
+  /* with the given movie and quality 
+  this function will select the torrent matching the quality
+  */
+  movie.torrents.filter( t => 
+    t.hash === quality.hash
+  )[0]
+
+export { get_torrent, query_movie }

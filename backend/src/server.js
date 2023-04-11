@@ -1,16 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { get_torrent } from './yify-server.js';
+import { get_torrent, query_movie } from './yify-server.js';
 const app = express();
-import { get_disk_left, check_memeory } from './system.js';
+import { get_mem_stats, check_memeory } from './system.js';
 import { get_torrents, add_torrent } from './transmission-cli.js';
-import setRemoveTimer from './removeTimer.js';
-import dotenv, { parse } from 'dotenv';
+import dotenv from 'dotenv';
 // load the environment variables
 dotenv.config();
-
-
 
 // Listen on a specific host via the HOST environment variable
 var host = process.env.HOST || 'localhost';
@@ -20,9 +17,6 @@ var port = process.env.PORT || 3000;
 
  // list of accepted secret token to make the
 var accepted_token = process.env.TOKEN || '123456789';
-
-// delete the torrent after 2 hours
-var deltetionTime = parseInt(process.env.DELETIONTIME) || 2; //minute
 
 // Allow requests from specific origins
 var corsOptions = {
@@ -47,36 +41,36 @@ app.use((req, res, next) => {
 
 app.post('/yify/add', async function (req, res) {
     // get the url of the torrent from the request
+    console.log('req.body:', req.body);
     if (req.body?.movie_id && req.body?.quality) {
         const { movie_id, quality } = req.body;
-        console.log('movie_id:', movie_id, 'quality:', quality);
-        // get the torrent from yify
-        const torrent = await get_torrent(movie_id, quality);
+        // query the movie from yify
+        const movie = await query_movie(movie_id);
+        console.log('movies;', movie);
+        // get the torrent from the movie object
+        const torrent = get_torrent(movie, quality);
+        console.log('torrent:', torrent);
         // check if there is enough memory left
-        if (await check_memeory(torrent.size_bytes)) {
+        if (await check_memeory(torrent.size_bytes))
             return res.json({ error: 'not enough memory left' });
-        }
         // add the torrent to the transmission
-        const torrent_id = await add_torrent(torrent.url);
-        if (torrent_id) {
-            //  set remove timer
-            setRemoveTimer(torrent_id, deltetionTime);
-            return res.json({ status: 'ok' });
-        } else
+        const torrent_id = await add_torrent(torrent.url, movie);
+        console.log('torrent_id:', torrent_id);
+        // check if the torrent was added
+        if (torrent_id) // success
+            return res.json({ status: 'ok', id: torrent_id });
+        else // error
             return res.json({ error: 'transmission error' });
-    } else
+    } else // bad request
         return res.json({ error: 'bad request' });
 })
 
-app.get('/torrents', async function (req, res) {
+// this rounte returns the list of torrents
+app.get('/status', async function (req, res) {
     let torrents = await get_torrents();
-    res.json(torrents);
+    let memory = await get_mem_stats(torrents);
+    res.json({ torrents, memory });
 })
 
-// this route returns the system status of the opreationg system
-app.get('/disk', async function (req, res) {
-    let disk = await get_disk_left();
-    res.json(disk);
-})
 
 app.listen(port, host, () => console.log(`transmission manager listening on port ${port}!`) );

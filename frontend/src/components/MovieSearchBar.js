@@ -4,9 +4,8 @@ import Autocomplete from '@mui/material/Autocomplete';
 import CircularProgress from '@mui/material/CircularProgress';
 import { query_movie_suggestions } from '../yify-cli.js';
 import SuggestionCard from './SuggestionCard.js';
-import { transmision_add_torrent } from '../transmission-cli.js';
 
-export default function MovieSearchBar() {
+export default function MovieSearchBar({ selectSuggestion }) {
     /* this is the companent that will be used to search for a movie using the yify api
      * when a movie is selecte it donwload the torrent file and passes it to 
      * transmission-remote client*/
@@ -54,23 +53,20 @@ export default function MovieSearchBar() {
         setTextValue('');
         // close the search bar
         setOpen(false);
-        // start loading
-        setLoading(true);
         // clear the suggestions
         setSuggestions([]);
         console.log("torret:", torrent);
         console.log("quality:", quality);
         // send the torrent to the transmission server to download
-        let res = await transmision_add_torrent(torrent, quality);
-        // stop loading
-        setLoading(false);
+        await selectSuggestion(torrent, quality);
     }
 
     return <>
         <Autocomplete
-            sx={{ marginX: "5%", marginTop: "5%" }}
+            sx={{ marginX: "5%", marginBottom: "1rem" }}
             id="Stock Search"
             autoHighlight
+            variant="standard"
             open={open}
             onOpen={() => ((suggestions.length > 0) && setOpen(true))}
             onClose={() => setOpen(false)}
