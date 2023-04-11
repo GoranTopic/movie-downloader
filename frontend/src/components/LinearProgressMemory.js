@@ -27,7 +27,7 @@ export default function LinearProgressMemory({ used, claimed, total }) {
                 </Typography>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'end', alignItems: 'end', }}>
-                <Box sx={{ width: 600 }}>
+                <Box sx={{ width: '40%' }}>
                     <LinearProgress height={100} width={100} variant="buffer" value={progress} valueBuffer={buffer} />
                 </Box>
             </Box>

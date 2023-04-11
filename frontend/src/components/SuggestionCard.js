@@ -41,7 +41,8 @@ export default function SuggestionCard({ suggestion, selectTorrent }) {
             <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                 <CardMedia
                     component="img"
-                    sx={{ width: 51 }}
+                    size="small"
+                    sx={{ width: '5rem', height: '8rem' }}
                     image={suggestion.small_cover_image}
                     alt={suggestion.title}
                 />
@@ -51,10 +52,17 @@ export default function SuggestionCard({ suggestion, selectTorrent }) {
                         ({suggestion.year}) - {suggestion.rating} - {suggestion.language} -
                         {suggestion.genres ? suggestion.genres.map(genre => genre + " ") : ""}
                     </Typography>
+                        <IconButton 
+                            aria-label="download" 
+                            onClick={() => selectTorrent(suggestion, torrent)}>
+                            <FileDownloadIcon sx={{ height: 38, width: 38 }} />
+                        </IconButton>
                 </CardContent>
                 {/* add imbd icon button link */}
+
                 <FormControl>
                     <Box sx={{ display: 'flex', alignSelf: 'right', alignItems: 'center', pl: 1, pb: 1 }}>
+                        
                         <RadioGroup aria-label="quality" name="quality"
                             onChange={e => handleChange(e)}
                             defaultValue={choose_default_torrent(suggestion).url}>
@@ -63,20 +71,17 @@ export default function SuggestionCard({ suggestion, selectTorrent }) {
                                     key={torrent.url}
                                     value={torrent.url}
                                     size="small"
-                                    label={<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <Typography variant="subtitle2" fontSize={16} p={0.2}> {torrent.type} </Typography>
-                                        <Typography variant="subtitle2" fontSize={16} p={0.2}> {torrent.quality} </Typography>
-                                        <Typography variant="subtitle2" fontSize={16} p={0.2}> {torrent.size} </Typography>
-                                    </Box>}
+                                    label={
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography variant="subtitle2" fontSize={16} p={0.2}> {torrent.type} </Typography>
+                                            <Typography variant="subtitle2" fontSize={16} p={0.2}> {torrent.quality} </Typography>
+                                            <Typography variant="subtitle2" fontSize={16} p={0.2}> {torrent.size} </Typography>
+                                        </Box>
+                                    }
                                     control={<Radio />}
                                 />
                             )}
                         </RadioGroup>
-                        <IconButton 
-                            aria-label="download" 
-                            onClick={() => selectTorrent(suggestion, torrent)}>
-                            <FileDownloadIcon sx={{ height: 38, width: 38 }} />
-                        </IconButton>
                     </Box>
                 </FormControl>
             </Box>
