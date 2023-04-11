@@ -24,6 +24,9 @@ const minutesToDeletion = parseInt(process.env.MIN_TO_DELETION) || 60; // minute
 // convert minutes to milliseconds
 const msToDeletion = minutesToDeletion * 60 * 1000
 
+// get the host 
+let host = process.env.HOST || 'localhost';
+
 console.log(`Torrents will be deleted after ${minutesToDeletion} minutes`)
 
 // properties to delete from the torrent object
@@ -67,7 +70,7 @@ const update_torrents = async () => {
             torrent = {
                 ...torrent, // process torrent
                 // add the url of the torrent
-                url: 'http://' + torrent.downloadDir + '/' + torrent.name,
+                url: 'http://' + host + '/.movies/' + torrent.name,
                 // add the date of the torrent
                 addedDateHuman: unixTimeToHumanTime(torrent.addedDate),
                 // time remaining to deletion

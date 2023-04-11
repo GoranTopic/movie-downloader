@@ -1,0 +1,12 @@
+[Unit]
+Description=This it the back en that talks direcly yo the transmission srvice and to the website
+
+[Service]
+User=telix
+Group=telix
+ExecStart=node src/server.js
+WorkingDirectory=/home/telix/movie-downloader/backend
+ 
+[Install]
+WantedBy=multi-user.target                                                                                                                                                                                                                                
+                             
