@@ -2,11 +2,9 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import CardMedia from '@mui/material/CardMedia';
 import Skeleton from '@mui/material/Skeleton';
 
 export default function LoadingTorrentCard({ torrent }) {
-
     return (
         <Card sx={{ display: 'flex', marginY: 1, marginX: "5%" }}>
             <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%' }}>

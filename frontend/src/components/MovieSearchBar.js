@@ -55,8 +55,8 @@ export default function MovieSearchBar({ selectSuggestion }) {
         setOpen(false);
         // clear the suggestions
         setSuggestions([]);
-        console.log("torret:", torrent);
-        console.log("quality:", quality);
+        //console.log("torret:", torrent);
+        //console.log("quality:", quality);
         // send the torrent to the transmission server to download
         await selectSuggestion(torrent, quality);
     }

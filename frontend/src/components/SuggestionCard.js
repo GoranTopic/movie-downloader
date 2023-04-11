@@ -28,14 +28,12 @@ export default function SuggestionCard({ suggestion, selectTorrent }) {
 
     // the torrent url to pass to the transmission client
     const [torrent, setTorrent] = React.useState(choose_default_torrent(suggestion));
-    const [url, setUrl] = React.useState(choose_default_torrent(suggestion).url);
     // set the 1080 torrent as the default as soon as it loads
 
     const handleChange = event => {
-        console.log('value:', event.target.value);
+        //console.log('value:', event.target.value);
         let torrent = suggestion.torrents.filter(torrent => torrent.url === event.target.value)[0];
         setTorrent(torrent);
-        setUrl(torrent.url);
     };
 
     return (
