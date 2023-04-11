@@ -41,21 +41,17 @@ app.use((req, res, next) => {
 
 app.post('/yify/add', async function (req, res) {
     // get the url of the torrent from the request
-    console.log('req.body:', req.body);
     if (req.body?.movie_id && req.body?.quality) {
         const { movie_id, quality } = req.body;
         // query the movie from yify
         const movie = await query_movie(movie_id);
-        console.log('movies;', movie);
         // get the torrent from the movie object
         const torrent = get_torrent(movie, quality);
-        console.log('torrent:', torrent);
         // check if there is enough memory left
         if (await check_memeory(torrent.size_bytes))
             return res.json({ error: 'not enough memory left' });
         // add the torrent to the transmission
         const torrent_id = await add_torrent(torrent.url, movie);
-        console.log('torrent_id:', torrent_id);
         // check if the torrent was added
         if (torrent_id) // success
             return res.json({ status: 'ok', id: torrent_id });

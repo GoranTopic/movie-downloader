@@ -1,5 +1,8 @@
 import Transmission from 'transmission'
 import { unixTimeToHumanTime } from './utils.js';
+import dotenv from 'dotenv';
+// load the environment variables
+dotenv.config();
 
 /* torrent Data Structure
     torrent = { 
@@ -13,6 +16,15 @@ import { unixTimeToHumanTime } from './utils.js';
         ...tranmissionTorrent
     }
 */
+
+// get download directory from env
+let download_dir = process.env.DOWNLOAD_DIR || '/home/telix/Downloads';
+
+const minutesToDeletion = parseInt(process.env.MIN_TO_DELETION) || 60; // minute
+// convert minutes to milliseconds
+const msToDeletion = minutesToDeletion * 60 * 1000
+
+console.log(`Torrents will be deleted after ${minutesToDeletion} minutes`)
 
 // properties to delete from the torrent object
 let propertiesToDelete = [
@@ -30,10 +42,6 @@ let propertiesToMaintain = [
     'large_cover_image',
 ];
 
-const minutesToDeletion = parseInt(process.env.DELETIONTIME) || 60; // minute
-// convert minutes to milliseconds
-const msToDeletion = minutesToDeletion * 60 * 1000
-
 // where we are going to store the data of the torrents
 let torrents = []
 
@@ -43,8 +51,6 @@ setInterval(async () => {
 // update every hour
 }, 1000);
 
-// get download directory from env
-let download_dir = process.env.DOWNLOAD_DIR || '/home/telix/Downloads';
 
 let transmission = new Transmission({
     host: '0.0.0.0',
