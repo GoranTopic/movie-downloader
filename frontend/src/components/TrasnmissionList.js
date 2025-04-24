@@ -4,7 +4,7 @@ import Grid from '@mui/material/Grid';
 import TorrentCard from './TorrentCard.js';
 import LoadingTorrentCard from './LoadingTorrentCard.js';
 
-export default function TrasnmissionList({ torrents }) {
+export default function TrasnmissionList({ torrents, setTorrents, onPlay }) {
   /* this is a coponent that will be used to show the torrents and their status frmo the Trasnmission-remote client */
 
     return <>
@@ -15,8 +15,13 @@ export default function TrasnmissionList({ torrents }) {
             rowSpacing={10}>
             { /* for each torrent map to torent card */}
             {torrents.map(torrent => torrent.status === "loading" ?
-                <LoadingTorrentCard key={torrent.id} torrent={torrent} /> :
-                <TorrentCard key={torrent.id} torrent={torrent} />
+                <LoadingTorrentCard key={torrent.id + torrent.imdb_code} torrent={torrent} /> :
+                <TorrentCard 
+                    key={torrent.id} 
+                    torrent={torrent} 
+                    setTorrents={setTorrents}
+                    onPlay={onPlay}
+                />
             )}
         </Grid>
     </>

@@ -19,32 +19,53 @@ export default function MovieSearchBar({ selectSuggestion }) {
     // loading: is wether is qeuring search bar loading
     const [loading, setLoading] = React.useState(false);
     // would this be loagin if there are no query result?
+    const [debouncedValue, setDebouncedValue] = React.useState("");
+    const timeoutRef = React.useRef(null);
 
+    // Debounce effect
     React.useEffect(() => {
-        // set as active?
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+
+        timeoutRef.current = setTimeout(() => {
+            setDebouncedValue(textValue);
+        }, 300);
+
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, [textValue]);
+
+    // Search effect
+    React.useEffect(() => {
         let active = true;
-        // if(textValue) active = true;
+
         (async () => {
-            if (active && textValue !== "") {
-                //console.log("search query:", textValue);
+            if (active && debouncedValue !== "") {
+                console.log("search query:", debouncedValue);
                 setLoading(true);
-                // query suggestions
-                let suggestions = await query_movie_suggestions(textValue);
-                //console.log("got search suggestions:", quotes);
-                setSuggestions(suggestions);
-                    // get only the suggestions that are not already in the list
-                    //let suggestions_id = s.map(s => s.id);
-                    //let new_suggestions = suggestions.filter(s => !suggestions_id.includes(s.id));
-                    //return [...s, ...new_suggestions];
-                //});
-                setOpen(true);
-                setLoading(false);
+                try {
+                    let suggestions = await query_movie_suggestions(debouncedValue);
+                    console.log("got search suggestions:", suggestions);
+                    if (active) {
+                        setSuggestions(suggestions);
+                        setOpen(true);
+                    }
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    if (active) {
+                        setLoading(false);
+                    }
+                }
             }
         })();
-        // return a function that will be called when the component is unmounted
+
         return () => { active = false; };
-        // every time the textValue changes
-    }, [textValue]);
+    }, [debouncedValue]);
 
     const selectTorrent = async (torrent, quality) => {
         /* this function uses the selected movie suggestion to download the torrent file
@@ -95,10 +116,10 @@ export default function MovieSearchBar({ selectSuggestion }) {
                     InputProps={{
                         ...params.InputProps,
                         endAdornment: (
-                            <React.Fragment>
+                            <>
                                 {loading ? <CircularProgress color="inherit" size={20} /> : null}
                                 {params.InputProps.endAdornment}
-                            </React.Fragment>
+                            </>
                         ),
                     }}
                 />

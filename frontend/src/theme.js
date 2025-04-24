@@ -1,5 +1,5 @@
 import { createTheme } from '@mui/material/styles';
-import {  grey, yellow, green } from '@mui/material/colors';
+import { grey, yellow, green } from '@mui/material/colors';
 
 const lightTheme = createTheme({
     palette: {
@@ -19,6 +19,20 @@ const lightTheme = createTheme({
         white: {
             main: grey[500],
         },
+        background: {
+            default: '#f5f5f5',
+            paper: '#ffffff',
+        },
+    },
+    components: {
+        MuiCssBaseline: {
+            styleOverrides: {
+                body: {
+                    backgroundColor: '#f5f5f5',
+                    transition: 'background-color 0.3s ease',
+                },
+            },
+        },
     },
 });
 
@@ -26,10 +40,24 @@ const darkTheme = createTheme({
     palette: {
         mode: 'dark',
         primary: {
-            main: green[800], // white
+            main: green[800],
         },
         secondary: {
-            main: grey[200], // more grey
+            main: grey[200],
+        },
+        background: {
+            default: '#121212',
+            paper: '#1e1e1e',
+        },
+    },
+    components: {
+        MuiCssBaseline: {
+            styleOverrides: {
+                body: {
+                    backgroundColor: '#121212',
+                    transition: 'background-color 0.3s ease',
+                },
+            },
         },
     },
 });

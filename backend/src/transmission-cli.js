@@ -1,8 +1,16 @@
 import Transmission from 'transmission'
 import { unixTimeToHumanTime } from './utils.js';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { DOWNLOADS_PATH } from './config.js';
+import fs from 'fs';
 // load the environment variables
 dotenv.config();
+
+// Get the directory name of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /* torrent Data Structure
     torrent = { 
@@ -17,8 +25,8 @@ dotenv.config();
     }
 */
 
-// get download directory from env
-let download_dir = process.env.DOWNLOAD_DIR || '/home/telix/Downloads';
+// Use the global DOWNLOADS_PATH from config
+const download_dir = DOWNLOADS_PATH;
 
 const minutesToDeletion = parseInt(process.env.MIN_TO_DELETION) || 60; // minute
 // convert minutes to milliseconds
@@ -43,6 +51,8 @@ let propertiesToMaintain = [
     'small_cover_image',
     'medium_cover_image',
     'large_cover_image',
+    'imdb_code',
+    'subtitleTracks'
 ];
 
 // where we are going to store the data of the torrents
@@ -54,64 +64,75 @@ setInterval(async () => {
 // update every hour
 }, 1000);
 
-
-let transmission = new Transmission({
-    host: '0.0.0.0',
-    port: 9091
-})
+let transmission;
+try {
+    transmission = new Transmission({
+        host: '0.0.0.0',
+        port: 9091
+    })
+} catch (error) {
+    console.error('Error initializing Transmission:', error);
+    process.exit(1);
+}
 
 // check the lif cycle of the torrent,
-// if it is active or if ir stalled or if the delteion date as passed
-// deletition 
+// if it is active or if ir stalled or if the delteion date as passed deletition 
 const update_torrents = async () => {
     // get the list of torrents from transmission
-    torrents = [...(await query_transmission())]
-        .map(torrent => {
-            torrent = {
-                ...torrent, // process torrent
-                // add the url of the torrent
-                url: 'http://' + host + '/.movies/' + torrent.name,
-                // add the date of the torrent
-                addedDateHuman: unixTimeToHumanTime(torrent.addedDate),
-                // time remaining to deletion
-                minutesToDeletion: minutesToDeletion,
-                // milliseconds remaining to deletion
-                msToDeletion: msToDeletion,
-                // time remaining to deletion
-                remainingTimeToDeletion: (() => {
-                    //console.log('torrent:', torrent.name)
-                    let res;
-                    let age = Date.now() - torrent.startDate * 1000;
-                    if (age >= msToDeletion) res = 0
-                    else res = msToDeletion - age
-                    //console.log('Date.now():', Date.now(), 'torrent.startDate:', torrent.addedDate * 1000)
-                    //console.log('age:', age, 'msToDeletion:', msToDeletion)
-                    //console.log('res:', res)
-                    return res;
-                })(),
-            }
-            // let delte information from tramsission that the client does not need
-            // delete from each torrent the following properties
-            for (let property of propertiesToDelete)
-                delete torrent[property]
-            // for every property in propertiesToMaintain we find the corresponding torrent by id and 
-            // add the property to this torrent
-            for (let property of propertiesToMaintain) {
-                let torrentToMaintain = torrents.find(t => t.id === torrent.id);
-                if(torrentToMaintain)
-                    torrent[property] = torrentToMaintain[property];
-            }
-            return torrent;
-        })
+    let new_torrents = [...(await query_transmission())]
+    // if the torrent is already in the torrents array, update the torrent
+    // otherwise, add the torrent to the torrents array
+    torrents = new_torrents.map(torrent => {
+        let matched_torrent = torrents.find(t => t.id === torrent.id);
+        if (matched_torrent) {
+            // if the torrent is matched, merge the new torrent with the existing torrent
+            torrent = { ...matched_torrent, ...torrent };
+        }
+        return torrent;
+    })
+    // update the torrents
+    torrents.map(torrent => {
+        /*
+                                        lifespan
+            |-----------------------------------------------------------|
+        start date       age      remainingTimeToDeletion         deletion date
+            |------------|----------------------------------------------|
+        */
+        // the date when the torrent was added
+        torrent.msAddedDateHuman = unixTimeToHumanTime(torrent.addedDate);
+        // the time the torrent will be in our system before it will be deleted
+        torrent.msLifeSpan = torrent.msLifeSpan ? torrent.msLifeSpan : msToDeletion;
+        // the date when the torrent will be deleted
+        torrent.msDeletionDate = torrent.addedDate + torrent.msLifeSpan;
+        // the age of the torrent
+        torrent.msAge = Date.now() - torrent.addedDate * 1000;
+        // the remaining time to deletion
+        torrent.remainingTimeToDeletion = (() => {
+            // if the torrent has lived longer than the time it will be in our system, return 0
+            if (torrent.msAge >= torrent.msLifeSpan) return 0;
+            else return torrent.msLifeSpan - torrent.msAge
+        })();
+        // let delete information from tramsission that the client does not need
+        // delete from each torrent the following properties
+        for (let property of propertiesToDelete)
+            delete torrent[property]
+        // for every property in propertiesToMaintain we find the corresponding torrent by id and 
+        // add the property to this torrent
+        for (let property of propertiesToMaintain) {
+            let torrentToMaintain = torrents.find(t => t.id === torrent.id);
+            if (torrentToMaintain)
+                torrent[property] = torrentToMaintain[property];
+        }
+        return torrent;
+    })
     // check if the torrent should be deleted
     torrents.forEach(async torrent => {
         //decied torrent should be deleted
         if (torrent.remainingTimeToDeletion === 0) {
-            await delete_torrent(torrent.id, true);
+            await delete_torrent(torrent.id, path.join(download_dir, torrent.name), true);
             torrents = torrents.filter(t => t.id !== torrent.id);
         }
     })
-    //console.log('torrents:', torrents)
     return torrents;
 }
 
@@ -139,6 +160,7 @@ const add_torrent = async (torrent_url, movie) => {
         torrents.push({
             ...movie,
             id: id,
+            imdb_code: movie.imdb_code,
         });
         return id;
     } else {
@@ -146,19 +168,70 @@ const add_torrent = async (torrent_url, movie) => {
     }
 }
 
-const delete_torrent =  async (torrent_id, delete_file=false) => 
-    new Promise( async (resolve, reject ) => 
-        await transmission.remove(
-            torrent_id, 
-            delete_file,
-            (err, res) => {
-                if(err)
-                    reject(err); 
-                else
-                    resolve( true);
+const add_time = async (torrent_id) => {
+    // Find the torrent first to check its current lifespan
+    const torrent = torrents.find(t => t.id === torrent_id);
+    if (!torrent) {
+        return { status: 'error', error: 'Torrent not found' };
+    }
+
+    // Check if the torrent's lifespan is less than 5 hours (5 * 60 * 60 * 1000 milliseconds)
+    if (torrent.remainingTimeToDeletion >= 5 * 60 * 60 * 1000) {
+
+        return { status: 'error', error: 'Maximum time limit reached (5 hours)' };
+    }
+
+    // Update the torrent's deletion time
+    torrents.forEach(torrent => {
+        if(torrent.id === torrent_id) {
+            torrent.msLifeSpan += 30 * 60 * 1000;
+        }
+    });
+    // Trigger an immediate update of the torrents list
+    await update_torrents();
+    // Return the updated torrent
+    let updatedTorrent = torrents.find(torrent => torrent.id === torrent_id);
+    return { status: 'ok', torrent: updatedTorrent };
+};
+
+
+const delete_torrent = async (torrent_id, dirpath, delete_file = true) => {
+    try {
+        // First, remove the torrent from transmission
+        await new Promise((resolve, reject) => 
+            transmission.remove(
+                torrent_id, 
+                delete_file,
+                (err, res) => {
+                    if (err) reject(err);
+                    else resolve(true);
+                }
+            )
+        );
+
+        // Delete the directory if it exists
+        if (dirpath && fs.existsSync(dirpath)) {
+            try {
+                // Use fs.rm with recursive option to delete directory and all contents
+                await fs.promises.rm(dirpath, { recursive: true, force: true });
+            } catch (dirError) {
+                console.error(`Error deleting directory ${dirpath}:`, dirError);
+                // Don't throw here since the torrent was already removed
             }
-        )
-    )
+        }
+
+        // Remove the torrent from our local array
+        const index = torrents.findIndex(t => t.id === torrent_id);
+        if (index !== -1) {
+            torrents.splice(index, 1);
+        }
+
+        return true;
+    } catch (error) {
+        console.error(`Error in delete_torrent for ID ${torrent_id}:`, error);
+        throw error;
+    }
+}
 
 const check_torrent_status =  async torrent_id => 
     new Promise( async (resolve, reject ) => 
@@ -194,9 +267,25 @@ const get_torrents = async () =>{
     return torrents;
 }
 
+const update_torrent = async (torrent_id, torrent) => {
+    // Update the torrent's deletion time
+    torrents = torrents.map(t => {
+        if(t.id === torrent_id){
+            return { ...t, ...torrent };
+        }
+        return t;
+    });
+    // Trigger an immediate update of the torrents list
+    await update_torrents();
+    // Return the updated torrent
+    return torrents.find(torrent => torrent.id === torrent_id);
+};
+
+
 // Get torrent state
 function getStatusType(type){
     return transmission.statusArray[type]
 }
 
-export { get_torrents, getStatusType, add_torrent, delete_torrent, check_torrent_status }
+// Export Functions
+export { add_torrent, get_torrents, add_time, delete_torrent, update_torrent }
