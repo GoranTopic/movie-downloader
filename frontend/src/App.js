@@ -12,6 +12,8 @@ import TransmisionList from './components/TrasnmissionList.js'
 import ThemeButton from './components/ThemeChangeButton';
 import ErrorModal from './components/ErrorModal';
 import MediaPlayerModal from './components/MediaPlayerModal';
+import dotenv from 'dotenv';
+dotenv.config();
 
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 
