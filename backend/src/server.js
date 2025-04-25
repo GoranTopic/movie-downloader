@@ -27,6 +27,9 @@ var cors_proxy_port = process.env.CORS_PROXY_PORT || 8080;
 // list of accepted secret token to make the
 var accepted_token = process.env.TOKEN || '123456789';
 
+// prefix path of api
+var prefix_path = process.env.API_PATH || '/api';
+
 // Allow requests from specific origins
 var corsOptions = {
     origin: '*',
@@ -36,6 +39,8 @@ app.use(cors(corsOptions));
 
 // parse the body of the request
 app.use(bodyParser.json());
+
+console.log(process.env);
 
 // Initialize CORS proxy
 const cors_proxy_server = cors_proxy.createServer({
@@ -52,7 +57,8 @@ cors_proxy_server.listen(cors_proxy_port, host, () => {
 // this is the route that will check it there is token in the request
 app.use((req, res, next) => {
     // Skip token check for media and stream endpoints
-    if (req.url.startsWith('/media/') || req.url.startsWith('/stream/')) {
+    if (req.url.startsWith(prefix_path + 'media/') || 
+        req.url.startsWith(prefix_path + '/stream/')) {
         return next();
     }
     
@@ -66,7 +72,7 @@ app.use((req, res, next) => {
 })
 
 // Add CORS proxy endpoint
-app.get('/proxy/:url(*)', (req, res) => {
+app.get(prefix_path + '/proxy/:url(*)', (req, res) => {
     req.url = req.url.replace('/proxy/', '/');
     // make sure that the request is going to the correct server enpoint 
     if (req.url.includes('yts')) {
@@ -76,7 +82,7 @@ app.get('/proxy/:url(*)', (req, res) => {
     }
 });
 
-app.post('/yify/add', async function (req, res) {
+app.post(prefix_path + '/yify/add', async function (req, res) {
     // get the url of the torrent from the request
     if (req.body?.movie_id && req.body?.quality) {
         const { movie_id, quality } = req.body;
@@ -99,14 +105,14 @@ app.post('/yify/add', async function (req, res) {
 })
 
 // this rounte returns the list of torrents
-app.get('/status', async function (req, res) {
+app.get(prefix_path + '/status', async function (req, res) {
     let torrents = await get_torrents();
     let memory = await get_mem_stats(torrents);
     res.json({ torrents, memory });
 })
 
 // Add endpoint to extend torrent deletion time
-app.post('/add_time', async function (req, res) {
+app.post(prefix_path + '/add_time', async function (req, res) {
     if (req.body?.torrent_id) {
         const { torrent_id } = req.body;
         // add 30 minutes to the torrent
@@ -118,7 +124,7 @@ app.post('/add_time', async function (req, res) {
 })
 
 // Add endpoint for downloading movie files
-app.get('/download/:filename', async (req, res) => {
+app.get(prefix_path + '/download/:filename', async (req, res) => {
     const filename = decodeURIComponent(req.params.filename);
     const filePath = path.join(DOWNLOADS_PATH, filename);
     
@@ -175,10 +181,10 @@ app.get('/download/:filename', async (req, res) => {
 });
 
 // Serve static files from a 'public' folder
-app.use('/media', express.static(DOWNLOADS_PATH));
+app.use(prefix_path + '/media', express.static(DOWNLOADS_PATH));
 
 // Video streaming endpoint
-app.get('/stream/:torrentId', async (req, res) => {
+app.get(prefix_path + '/stream/:torrentId', async (req, res) => {
     try {
         console.log('Stream request received for torrent:', req.params.torrentId);
         const torrentId = parseInt(req.params.torrentId);
@@ -254,7 +260,7 @@ app.get('/stream/:torrentId', async (req, res) => {
 });
 
 // Add endpoint for fetching subtitles
-app.get('/yify/subtitles/:torrentId/:imdbCode', async (req, res) => {
+app.get(prefix_path + '/yify/subtitles/:torrentId/:imdbCode', async (req, res) => {
     try {
         console.log('Fetching subtitles for torrent:', req.params.torrentId, 'with IMDB code:', req.params.imdbCode);
         const { torrentId, imdbCode } = req.params;
@@ -297,7 +303,7 @@ app.get('/yify/subtitles/:torrentId/:imdbCode', async (req, res) => {
 });
 
 // Add endpoint to delete a torrent
-app.delete('/torrent/:id', async function (req, res) {
+app.delete(prefix_path + '/torrent/:id', async function (req, res) {
     try {
         const torrentId = parseInt(req.params.id);
         if (isNaN(torrentId)) {
