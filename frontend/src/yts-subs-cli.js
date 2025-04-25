@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Get the server URL from environment variable or use default
-const serverUrl = process.env.API_URL || 'http://localhost:3001';
+const serverUrl = process.env.API_URL || 'http://localhost:3001/teracsmoviedownloader/'
 
 // Set timeout to 5 minutes (300000 ms)
 const SUBTITLE_REQUEST_TIMEOUT = 5 * 60 * 1000;

@@ -40,13 +40,16 @@ app.use(cors(corsOptions));
 // parse the body of the request
 app.use(bodyParser.json());
 
-console.log(process.env);
-
 // Initialize CORS proxy
 const cors_proxy_server = cors_proxy.createServer({
     originWhitelist: [], // Allow all origins
     requireHeader: ['origin', 'x-requested-with'],
-    removeHeaders: ['cookie', 'cookie2']
+    removeHeaders: ['cookie', 'cookie2'],
+    headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    }
 });
 
 // Start CORS proxy server
@@ -56,6 +59,9 @@ cors_proxy_server.listen(cors_proxy_port, host, () => {
 
 // this is the route that will check it there is token in the request
 app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+        return next(); // Skip token check for preflight
+    }
     // Skip token check for media and stream endpoints
     if (req.url.startsWith(prefix_path + 'media/') || 
         req.url.startsWith(prefix_path + '/stream/')) {

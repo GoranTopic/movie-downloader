@@ -4,7 +4,7 @@ import axios from 'axios';
 var endpoint = process.env.REACT_APP_YIFY || 'https://yts.lt/api/v2/';
 
 // cors proxy
-var cors_proxy = process.env.API_PROXY || 'http://localhost:3001/teracsmoviedownloader/api/proxy/';
+var cors_proxy = process.env.API_PROXY || 'http://localhost:3001/teracsmoviedownloader/proxy/';
 
 // super secret token, don't share =P 
 var token = process.env.TOKEN || '123456789';
