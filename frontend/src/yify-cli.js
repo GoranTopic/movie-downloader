@@ -4,10 +4,10 @@ import axios from 'axios';
 var endpoint = process.env.REACT_APP_YIFY || 'https://yts.lt/api/v2/';
 
 // cors proxy
-var cors_proxy = process.env.REACT_APP_CORS_PROXY || 'http://localhost:3001/proxy';
+var cors_proxy = process.env.API_PROXY || 'http://localhost:3001/teracsmoviedownloader/api/proxy/';
 
 // super secret token, don't share =P 
-var token = process.env.REACT_APP_CORS_TOKEN || '123456789';
+var token = process.env.TOKEN || '123456789';
 
 const query_movie_suggestions = async key => {
   try {
