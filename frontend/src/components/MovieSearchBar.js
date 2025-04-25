@@ -45,11 +45,9 @@ export default function MovieSearchBar({ selectSuggestion }) {
 
         (async () => {
             if (active && debouncedValue !== "") {
-                console.log("search query:", debouncedValue);
                 setLoading(true);
                 try {
                     let suggestions = await query_movie_suggestions(debouncedValue);
-                    console.log("got search suggestions:", suggestions);
                     if (active) {
                         setSuggestions(suggestions);
                         setOpen(true);
@@ -76,8 +74,6 @@ export default function MovieSearchBar({ selectSuggestion }) {
         setOpen(false);
         // clear the suggestions
         setSuggestions([]);
-        //console.log("torret:", torrent);
-        //console.log("quality:", quality);
         // send the torrent to the transmission server to download
         await selectSuggestion(torrent, quality);
     }

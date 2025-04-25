@@ -10,7 +10,6 @@ var cors_proxy = process.env.REACT_APP_CORS_PROXY || 'http://localhost:3001/prox
 var token = process.env.REACT_APP_CORS_TOKEN || '123456789';
 
 const query_movie_suggestions = async key => {
-  console.log("querying movie suggestions:", key)
   try {
     const { data } = await axios
       .get(`${cors_proxy}/${endpoint}/list_movies.json`, {
@@ -20,10 +19,8 @@ const query_movie_suggestions = async key => {
          },
         headers: { token } // token for the cors proxy
       })
-    console.log("got movie suggestions:", data)
     if (data.status === 'ok')
       if (data.data.movies) {
-        console.log("got movie suggestions:", data.data.movies)
         return data.data.movies;
       }
       else

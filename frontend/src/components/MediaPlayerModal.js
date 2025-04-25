@@ -52,7 +52,6 @@ const playerContainerStyle = {
 
 export default function MediaPlayerModal({ open, onClose, torrent }) {
     const [error, setError] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
     const [mediaFilePath, setMediaFilePath] = useState(null);
     const [subtitleTracks, setSubtitleTracks] = useState([]);
     const videoRef = useRef(null);
@@ -64,9 +63,7 @@ export default function MediaPlayerModal({ open, onClose, torrent }) {
         if (!torrent) return;
 
         try {
-            console.log('Fetching media path for torrent:', torrent.id);
             const response = await axios.get(`${serverUrl}/stream/${torrent.id}`);
-            console.log('Received media file path:', response.data.mediaFilePath);
             setMediaFilePath(`${serverUrl}/media/${response.data.mediaFilePath}`);
             setError(null);
             if (torrent.subtitleTracks) {
@@ -76,13 +73,10 @@ export default function MediaPlayerModal({ open, onClose, torrent }) {
                     srclang: sub.language,
                     label: sub.language,
                 })));
-                console.log('subtitleTracks:', subtitleTracks);
             }
         } catch (err) {
             console.error('Error fetching media path:', err);
             setError('Error loading video file');
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -95,7 +89,7 @@ export default function MediaPlayerModal({ open, onClose, torrent }) {
     // Initialize the video.js player
     useEffect(() => {
         if (!mediaFilePath || !videoRef.current) return;
-        console.log('Initializing video.js player');
+        
         // Initialize Video.js player
         const videoJsOptions = {
             autoplay: true,
@@ -111,8 +105,6 @@ export default function MediaPlayerModal({ open, onClose, torrent }) {
 
         // Create and store the player instance
         const player = videojs(videoRef.current, videoJsOptions, () => {
-            console.log('Video.js player is ready');
-            setIsLoading(false);
             setError(null);
             playerRef.current = player;
 
@@ -120,7 +112,6 @@ export default function MediaPlayerModal({ open, onClose, torrent }) {
             player.on('error', () => {
                 console.error('Video.js player error:', player.error());
                 setError('Error playing video. Please check if the file exists and try again.');
-                setIsLoading(false);
             });
         });
 

@@ -15,7 +15,6 @@ const SUBTITLE_REQUEST_TIMEOUT = 5 * 60 * 1000;
 export const getSubs = async (torrentId, imdbCode) => {
     // First try to get subtitles using IMDB code if available
     try {
-        console.log('Fetching subtitles for torrent:', torrentId, 'with IMDB code:', imdbCode);
         const response = await axios.get(`${serverUrl}/yify/subtitles/${torrentId}/${imdbCode}`, {
             timeout: SUBTITLE_REQUEST_TIMEOUT
         });
@@ -28,4 +27,4 @@ export const getSubs = async (torrentId, imdbCode) => {
     } catch (error) {
         console.warn('Failed to fetch subtitles using IMDB code:', error);
     }
-}; 
+};

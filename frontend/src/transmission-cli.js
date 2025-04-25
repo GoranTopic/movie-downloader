@@ -12,13 +12,11 @@ const  transmision_add_torrent= async (suggestion, torrent, imdb_code) => {
     // this function will add a torrent to the transmission server
     // it will return true if the torrent was added successfully
     // send the request to add a toreent to the transmission server
-    console.log('imdb_code:', imdb_code);
     let res = await axios.post(`${server}/yify/add`, {
         movie_id: suggestion.id,
         imdb_code,
         quality: torrent,
     })
-    console.log('res:', res);
     return res.data.id;
 }
 
@@ -49,7 +47,7 @@ const add_time = async (torrent_id) => {
 const delete_torrent = async (torrent_id) => {
     try {
         const response = await axios.delete(`${server}/torrent/${torrent_id}`);
-        console.log('Torrent deleted successfully:', torrent_id);
+console.log('Torrent deleted successfully:', torrent_id);
         return response.data;
     } catch (err) {
         console.error('Error deleting torrent:', err);
@@ -57,4 +55,4 @@ const delete_torrent = async (torrent_id) => {
     }
 }
 
-export { transmision_add_torrent, query_status, add_time, delete_torrent } 
+export { transmision_add_torrent, query_status, add_time, delete_torrent }

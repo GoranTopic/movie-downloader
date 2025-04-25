@@ -148,7 +148,6 @@ const add_torrent = async (torrent_url, movie) => {
                     reject(err)
                 } else {
                     var id = res.id;
-                    console.log('Torrent added to transmission.');
                     resolve(id);
                 }
             }
