@@ -20,7 +20,7 @@ export default function RemoveX({ onDelete, disabled = false, sx = {} }) {
       sx={{
         position: 'absolute',
         top: 0,
-        right: 0,
+        left: 0,
         color: 'rgba(0, 0, 0, 0.43)',
         zIndex: 1,
         padding: '2px',

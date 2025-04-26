@@ -1,7 +1,4 @@
 import axios from 'axios';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 var endpoint = process.env.YIFY || 'https://yts.lt/api/v2/';
 
@@ -19,6 +16,33 @@ const query_movie = async movie_id =>
     .then(response => response.data.data.movie)
     .catch(e => console.error(e))
 
+
+/* in the search bar */
+const query_movie_suggestions = async key => {
+    try {
+        const { data } = await axios
+            .get(`${endpoint}/list_movies.json`, {
+                params: { 
+                    query_term: key,
+                    limit: 50,
+                },
+            })
+        if (data.status === 'ok')
+            if (data.data.movies) {
+                return { 
+                    movies: data.data.movies,
+                    status: data.status,
+                };
+            }
+        else
+            return []
+        throw new Error(data.status_message);
+    } catch (err) {
+        throw err;
+    }
+}
+
+
 const get_torrent = (movie, quality) =>
   /* with the given movie and quality 
   this function will select the torrent matching the quality
@@ -27,4 +51,5 @@ const get_torrent = (movie, quality) =>
     t.hash === quality.hash
   )[0]
 
-export { get_torrent, query_movie }
+
+export { get_torrent, query_movie,  query_movie_suggestions };

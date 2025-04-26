@@ -1,34 +1,25 @@
 import axios from 'axios';
 
 // yify api endpoint
-var endpoint = process.env.REACT_APP_YIFY || 'https://yts.lt/api/v2/';
-
-// cors proxy
-var cors_proxy = process.env.API_PROXY || 'http://localhost:3001/teracsmoviedownloader/proxy/';
+var endpoint = process.env.REACT_APP_URL || 'http://localhost:3001'
 
 // super secret token, don't share =P 
-var token = process.env.TOKEN || '123456789';
+var token = process.env.REACT_APP_TOKEN || '123456789';
 
 const query_movie_suggestions = async key => {
-  try {
-    const { data } = await axios
-      .get(`${cors_proxy}/${endpoint}/list_movies.json`, {
-        params: { 
-          query_term: key,
-          limit: 50,
-         },
-        headers: { token } // token for the cors proxy
-      })
-    if (data.status === 'ok')
-      if (data.data.movies) {
-        return data.data.movies;
-      }
-      else
+    try {
+        const { data } = await axios
+            .get(`${endpoint}/search/${key}`, {
+                headers: { token } // token for the cors proxy
+            })
+        if (data?.status === 'ok')
+            if (data.movies) {
+                return data.movies;
+            } 
         return []
-    throw new Error(data.status_message);
-  } catch (err) {
-    throw err;
-  }
+    } catch (err) {
+        throw err;
+    }
 }
 
 

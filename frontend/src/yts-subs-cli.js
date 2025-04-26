@@ -1,7 +1,10 @@
 import axios from 'axios';
 
 // Get the server URL from environment variable or use default
-const serverUrl = process.env.API_URL || 'http://localhost:3001/teracsmoviedownloader/'
+const serverUrl = process.env.API_URL || 'http://localhost:3001'
+
+// super secret token, don't share =P 
+let token = process.env.REACT_APP_TOKEN || '123456789';
 
 // Set timeout to 5 minutes (300000 ms)
 const SUBTITLE_REQUEST_TIMEOUT = 5 * 60 * 1000;
@@ -15,8 +18,9 @@ const SUBTITLE_REQUEST_TIMEOUT = 5 * 60 * 1000;
 export const getSubs = async (torrentId, imdbCode) => {
     // First try to get subtitles using IMDB code if available
     try {
-        const response = await axios.get(`${serverUrl}/yify/subtitles/${torrentId}/${imdbCode}`, {
-            timeout: SUBTITLE_REQUEST_TIMEOUT
+        const response = await axios.get(`${serverUrl}/subtitles/${torrentId}/${imdbCode}`, {
+            timeout: SUBTITLE_REQUEST_TIMEOUT,
+            headers: { token },
         });
         if (response.data && response.data.torrent)
 

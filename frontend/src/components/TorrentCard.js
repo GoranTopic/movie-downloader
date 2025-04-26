@@ -33,8 +33,9 @@ export default function TorrentCard({ torrent, setTorrents, onPlay }) {
     };
 
     return (
-        <Card sx={{ display: 'flex', marginY: 1, marginX: "5%", position: 'relative' }}>
-            {/* Use the RemoveX component */}
+        // move it to the most left
+        <Card sx={{ display: 'flex', flexDirection: 'column', marginY: 1, marginX: "5%", position: 'relative' }}>
+            {/* Use the RemoveX component,  move RemoveX to the most left */}
             <RemoveX onDelete={handleDelete} disabled={isDeleting} />
 
             <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%' }}>

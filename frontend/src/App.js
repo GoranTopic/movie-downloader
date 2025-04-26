@@ -36,7 +36,7 @@ function App() {
          * lets query transimission-remote for the list of torrents */
         update_app();
         // return empty list of now 
-        const interval = setInterval(async () => update_app(), 1000);
+        const interval = setInterval(async () => update_app(), 5000);
         return () => clearInterval(interval);
     }, []);
 

@@ -1,8 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { get_torrent, query_movie } from './yify-server.js';
-import cors_proxy from 'cors-anywhere';
+import { get_torrent, query_movie, query_movie_suggestions } from './yify-server.js';
 import path from 'path';
 import fs from 'fs';
 import { DOWNLOADS_PATH } from './config.js';
@@ -21,9 +20,6 @@ var host = process.env.HOST || 'localhost';
 // Listen on a specific port via the PORT environment variable
 var port = process.env.PORT || 3001;
 
-// CORS proxy port
-var cors_proxy_port = process.env.CORS_PROXY_PORT || 8080;
-
 // list of accepted secret token to make the
 var accepted_token = process.env.TOKEN || '123456789';
 
@@ -40,25 +36,14 @@ app.use(cors(corsOptions));
 // parse the body of the request
 app.use(bodyParser.json());
 
-// Initialize CORS proxy
-const cors_proxy_server = cors_proxy.createServer({
-    originWhitelist: [], // Allow all origins
-    requireHeader: ['origin', 'x-requested-with'],
-    removeHeaders: ['cookie', 'cookie2'],
-});
-
-// Start CORS proxy server
-cors_proxy_server.listen(cors_proxy_port, host, () => {
-    console.log(`CORS proxy server running on port ${cors_proxy_port}!`);
-});
-
 // this is the route that will check it there is token in the request
 app.use((req, res, next) => {
     if (req.method === 'OPTIONS') {
+        console.log('Preflight request received');
         return next(); // Skip token check for preflight
     }
     // Skip token check for media and stream endpoints
-    if (req.url.startsWith('media/') || 
+    if (req.url.startsWith('/media/') || 
         req.url.startsWith('/stream/')) {
         return next();
     }
@@ -73,14 +58,12 @@ app.use((req, res, next) => {
 })
 
 // Add CORS proxy endpoint
-app.get('/proxy/:url(*)', (req, res) => {
-    req.url = req.url.replace('/proxy/', '/');
-    // make sure that the request is going to the correct server enpoint 
-    if (req.url.includes('yts')) {
-        cors_proxy_server.emit('request', req, res);
-    } else {
-        return res.send('Silly hacker, tricks are for kids...');
-    }
+app.get('/search/:term', async (req, res) => {
+    // get params from the request
+    let term = req.params.term;
+    // query the movie from yify for suggestions
+    let response = await query_movie_suggestions(term)
+    return res.json(response);
 });
 
 app.post('/yify/add', async function (req, res) {
@@ -208,7 +191,6 @@ app.get('/stream/:torrentId', async (req, res) => {
         }
 
         let mediaFilePath = filePath;
-        let subtitleFiles = [];
         
         // If it's a directory, find the largest media file and all subtitle files
         if (fs.statSync(filePath).isDirectory()) {
@@ -261,7 +243,7 @@ app.get('/stream/:torrentId', async (req, res) => {
 });
 
 // Add endpoint for fetching subtitles
-app.get('/yify/subtitles/:torrentId/:imdbCode', async (req, res) => {
+app.get('/subtitles/:torrentId/:imdbCode', async (req, res) => {
     try {
         console.log('Fetching subtitles for torrent:', req.params.torrentId, 'with IMDB code:', req.params.imdbCode);
         const { torrentId, imdbCode } = req.params;

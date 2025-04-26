@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-let server = process.env.REACT_APP_API_URL || 'http://localhost:3001/teracsmoviedownloader/api/';
+let server = process.env.REACT_APP_API_URL || 'http://localhost:3001'
 
 // super secret token, don't share =P 
 let token = process.env.REACT_APP_TOKEN || '123456789';
