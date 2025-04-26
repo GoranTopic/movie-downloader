@@ -8,10 +8,6 @@ import fs from 'fs';
 // load the environment variables
 dotenv.config();
 
-// Get the directory name of the current module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 /* torrent Data Structure
     torrent = { 
         id: 1,
@@ -31,9 +27,6 @@ const download_dir = DOWNLOADS_PATH;
 const minutesToDeletion = parseInt(process.env.MIN_TO_DELETION) || 60; // minute
 // convert minutes to milliseconds
 const msToDeletion = minutesToDeletion * 60 * 1000
-
-// get the host 
-let host = process.env.HOST || 'localhost';
 
 console.log(`Torrents will be deleted after ${minutesToDeletion} minutes`)
 
@@ -175,7 +168,7 @@ const add_time = async (torrent_id) => {
     }
 
     // Check if the torrent's lifespan is less than 5 hours (5 * 60 * 60 * 1000 milliseconds)
-    if (torrent.remainingTimeToDeletion >= 5 * 60 * 60 * 1000) {
+    if (torrent.remainingTimeToDeletion >= 9 * 60 * 60 * 1000) {
 
         return { status: 'error', error: 'Maximum time limit reached (5 hours)' };
     }
