@@ -57,7 +57,7 @@ export default function MediaPlayerModal({ open, onClose, torrent }) {
     const videoRef = useRef(null);
     const playerRef = useRef(null);
     // Get the server URL from environment variable or use default
-    const serverUrl = process.env.REACT_APP_TRANSMISSION_SERVER || 'http://localhost:3001';
+    const serverUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
     const fetchMedia = async () => {
         if (!torrent) return;
