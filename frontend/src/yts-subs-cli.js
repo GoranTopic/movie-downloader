@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Get the server URL from environment variable or use default
-const serverUrl = process.env.API_URL || 'http://localhost:3001'
+const serverUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001'
 
 // super secret token, don't share =P 
 let token = process.env.REACT_APP_TOKEN || '123456789';

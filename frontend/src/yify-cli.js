@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // yify api endpoint
-var endpoint = process.env.REACT_APP_URL || 'http://localhost:3001'
+var endpoint = process.env.REACT_APP_API_URL || 'http://localhost:3001'
 
 // super secret token, don't share =P 
 var token = process.env.REACT_APP_TOKEN || '123456789';
