@@ -28,4 +28,13 @@ const getPercentageOf = (value, total) => {
     return res;
 }
 
-export { secondsToHms, getPercentageOf, bytesToHumanReadable }
+// deterministic color for a username, so each user always gets their own color
+const userColor = (username) => {
+    let hash = 0;
+    for (let i = 0; i < (username || '').length; i++)
+        hash = (hash * 31 + username.charCodeAt(i)) | 0;
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 65%, 45%)`;
+}
+
+export { secondsToHms, getPercentageOf, bytesToHumanReadable, userColor }

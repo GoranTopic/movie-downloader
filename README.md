@@ -2,6 +2,20 @@
 
 A full-stack application that helps you search for and download movies using torrents. The project consists of a React-based frontend and a Node.js backend that work together to provide a seamless movie downloading experience.
 
+## Running with Docker
+
+Each service has its own container: `frontend` (nginx serving the React build), `backend` (Node API + WebSocket), `transmission` (torrent daemon) and `mailserver` (delivers signup verification emails).
+
+```bash
+docker compose up -d --build
+```
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+- Mail UI (see the verification emails): http://localhost:8025
+
+Set `TOKEN`, `AUTH_SECRET` and `PUBLIC_API_URL` in a `.env` file next to `docker-compose.yml` for real deployments. The bundled mailserver (Mailpit) keeps emails in a local inbox at :8025; to deliver to real mailboxes, point the backend's `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS` at a real SMTP relay instead.
+
 ## Project Structure
 
 ```

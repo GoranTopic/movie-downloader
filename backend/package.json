@@ -23,10 +23,12 @@
     "extract-zip": "^2.0.1",
     "follow-redirects": "^1.15.9",
     "https": "^1.0.0",
+    "nodemailer": "^9.0.3",
     "nodemon": "^2.0.22",
     "request": "^2.88.2",
     "subtitle-converter": "^3.0.12",
     "transmission": "^0.4.10",
+    "ws": "^8.21.0",
     "ytssubs": "^1.0.2"
   }
 }

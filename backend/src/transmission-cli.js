@@ -24,7 +24,7 @@ dotenv.config();
 // Use the global DOWNLOADS_PATH from config
 const download_dir = DOWNLOADS_PATH;
 
-const minutesToDeletion = parseInt(process.env.MIN_TO_DELETION) || 60; // minute
+const minutesToDeletion = parseInt(process.env.MIN_TO_DELETION) || 720; // minutes, default 12 hours
 // convert minutes to milliseconds
 const msToDeletion = minutesToDeletion * 60 * 1000
 
@@ -45,8 +45,35 @@ let propertiesToMaintain = [
     'medium_cover_image',
     'large_cover_image',
     'imdb_code',
-    'subtitleTracks'
+    'subtitleTracks',
+    'owner',
+    'msLifeSpan'
 ];
+
+// where torrent metadata (owner, artwork, subtitles) is persisted
+// so it survives a server restart
+const METADATA_PATH = process.env.TORRENT_META_PATH
+    ? path.resolve(process.env.TORRENT_META_PATH)
+    : path.join(process.cwd(), 'data', 'torrent-meta.json');
+
+let torrent_meta = {};
+try {
+    torrent_meta = JSON.parse(fs.readFileSync(METADATA_PATH, 'utf8'));
+} catch {
+    torrent_meta = {};
+}
+
+const save_meta = () => {
+    fs.mkdirSync(path.dirname(METADATA_PATH), { recursive: true });
+    fs.writeFileSync(METADATA_PATH, JSON.stringify(torrent_meta, null, 2));
+}
+
+// keep only the properties worth persisting for a torrent
+const meta_subset = (source) => Object.fromEntries(
+    propertiesToMaintain
+        .map(property => [property, source[property]])
+        .filter(([, value]) => value !== undefined)
+);
 
 // where we are going to store the data of the torrents
 let torrents = []
@@ -60,8 +87,8 @@ setInterval(async () => {
 let transmission;
 try {
     transmission = new Transmission({
-        host: '0.0.0.0',
-        port: 9091
+        host: process.env.TRANSMISSION_HOST || '0.0.0.0',
+        port: parseInt(process.env.TRANSMISSION_PORT) || 9091
     })
 } catch (error) {
     console.error('Error initializing Transmission:', error);
@@ -76,7 +103,8 @@ const update_torrents = async () => {
     // if the torrent is already in the torrents array, update the torrent
     // otherwise, add the torrent to the torrents array
     torrents = new_torrents.map(torrent => {
-        let matched_torrent = torrents.find(t => t.id === torrent.id);
+        // fall back to the persisted metadata after a restart
+        let matched_torrent = torrents.find(t => t.id === torrent.id) || torrent_meta[torrent.id];
         if (matched_torrent) {
             // if the torrent is matched, merge the new torrent with the existing torrent
             torrent = { ...matched_torrent, ...torrent };
@@ -147,13 +175,16 @@ const add_torrent = async (torrent_url, movie) => {
         )
     );
     // if the torrent was added successfully
-    if (id) { // let add the movie details to the torrent 
+    if (id) { // let add the movie details to the torrent
         // add torrent to the list
         torrents.push({
             ...movie,
             id: id,
             imdb_code: movie.imdb_code,
         });
+        // persist the metadata so ownership and artwork survive a restart
+        torrent_meta[id] = meta_subset(movie);
+        save_meta();
         return id;
     } else {
         return null;
@@ -218,6 +249,12 @@ const delete_torrent = async (torrent_id, dirpath, delete_file = true) => {
             torrents.splice(index, 1);
         }
 
+        // drop the persisted metadata as well
+        if (torrent_meta[torrent_id]) {
+            delete torrent_meta[torrent_id];
+            save_meta();
+        }
+
         return true;
     } catch (error) {
         console.error(`Error in delete_torrent for ID ${torrent_id}:`, error);
@@ -270,7 +307,13 @@ const update_torrent = async (torrent_id, torrent) => {
     // Trigger an immediate update of the torrents list
     await update_torrents();
     // Return the updated torrent
-    return torrents.find(torrent => torrent.id === torrent_id);
+    const updated = torrents.find(torrent => torrent.id === torrent_id);
+    // keep the persisted metadata in sync (e.g. subtitle tracks)
+    if (updated) {
+        torrent_meta[torrent_id] = { ...torrent_meta[torrent_id], ...meta_subset(updated) };
+        save_meta();
+    }
+    return updated;
 };
 
 

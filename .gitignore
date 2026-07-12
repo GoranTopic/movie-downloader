@@ -61,3 +61,6 @@ yarn-error.log*
 /downloads
 backend/downloads
 frontend/downloads
+
+# user database (contains password hashes)
+backend/data/

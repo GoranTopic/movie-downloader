@@ -8,8 +8,9 @@ import fs from 'fs';
 import { convert } from 'subtitle-converter';
 import path from 'path';
 
-// Base URL
-const baseURL = 'https://www.yifysubtitles.org'
+// Base URL (the .org domain now redirects here; the .ch zip
+// downloads return 403 unless a Referer header is sent)
+const baseURL = 'https://yifysubtitles.ch'
 
 // Search by IMDB id
 let getSubs = (id, cb) => {
@@ -90,7 +91,9 @@ function extractFilenameFromUrl(url) {
 function createHttpOptions() {
     return {
         headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            // the download host rejects requests without a Referer with a 403
+            'Referer': `${baseURL}/`
         },
         maxRedirects: 5
     };

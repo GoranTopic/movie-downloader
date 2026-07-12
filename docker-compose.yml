@@ -1,0 +1,79 @@
+# Movie Downloader — full stack
+#
+#   docker compose up -d --build
+#
+# Frontend:  http://localhost:3000
+# Backend:   http://localhost:3001
+# Mail UI:   http://localhost:8025  (browse the emails the app sent)
+#
+# Override TOKEN / AUTH_SECRET / PUBLIC_API_URL in a `.env` file next to
+# this compose file for anything beyond local testing.
+
+services:
+    # bittorrent daemon that does the actual downloading
+    transmission:
+        build: ./transmission
+        container_name: movie-transmission
+        volumes:
+            - downloads:/downloads
+            - transmission-config:/config
+        restart: unless-stopped
+
+    # smtp server that delivers the signup verification emails.
+    # mailpit keeps them browsable at :8025 — for real delivery swap
+    # this service for a relay and set SMTP_* on the backend instead.
+    mailserver:
+        image: axllent/mailpit
+        container_name: movie-mailserver
+        ports:
+            - "8025:8025"
+        restart: unless-stopped
+
+    # the api server
+    backend:
+        build: ./backend
+        container_name: movie-backend
+        depends_on:
+            - transmission
+            - mailserver
+        environment:
+            HOST: 0.0.0.0
+            PORT: 3001
+            TOKEN: ${TOKEN:-123456789}
+            AUTH_SECRET: ${AUTH_SECRET:-change-me-please}
+            DOWNLOADS_PATH: /downloads
+            TRANSMISSION_HOST: transmission
+            TRANSMISSION_PORT: 9091
+            MIN_TO_DELETION: 720
+            GUEST_MIN_TO_DELETION: 240
+            MAX_MOVIES_PER_USER: 2
+            SMTP_HOST: mailserver
+            SMTP_PORT: 1025
+            MAIL_FROM: "Movie Downloader <no-reply@movie-downloader.local>"
+            # must be reachable from the user's browser (verification links)
+            PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
+        volumes:
+            - downloads:/downloads
+            - backend-data:/app/data
+        ports:
+            - "3001:3001"
+        restart: unless-stopped
+
+    # the react app, served as static files by nginx
+    frontend:
+        build:
+            context: ./frontend
+            args:
+                REACT_APP_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
+                REACT_APP_TOKEN: ${TOKEN:-123456789}
+        container_name: movie-frontend
+        depends_on:
+            - backend
+        ports:
+            - "3000:80"
+        restart: unless-stopped
+
+volumes:
+    downloads:
+    transmission-config:
+    backend-data:

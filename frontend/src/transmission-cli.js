@@ -17,6 +17,8 @@ const  transmision_add_torrent= async (suggestion, torrent, imdb_code) => {
         imdb_code,
         quality: torrent,
     })
+    // surface server-side errors (e.g. movie limit reached) to the caller
+    if (res.data.error) throw new Error(res.data.error);
     return res.data.id;
 }
 
@@ -55,4 +57,22 @@ console.log('Torrent deleted successfully:', torrent_id);
     }
 }
 
-export { transmision_add_torrent, query_status, add_time, delete_torrent }
+/**
+ * Reports the user's current playback position (watch-together heartbeat)
+ */
+const report_watching = async (torrent_id, time, paused) => {
+    try {
+        await axios.post(`${server}/watching/${torrent_id}`, { time, paused });
+    } catch (err) { /* heartbeats are best-effort */ }
+}
+
+/**
+ * Tells the server the user closed the player
+ */
+const stop_watching = async (torrent_id) => {
+    try {
+        await axios.delete(`${server}/watching/${torrent_id}`);
+    } catch (err) { /* best-effort */ }
+}
+
+export { transmision_add_torrent, query_status, add_time, delete_torrent, report_watching, stop_watching }
