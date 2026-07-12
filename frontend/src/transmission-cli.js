@@ -67,11 +67,14 @@ const report_watching = async (torrent_id, time, paused) => {
 }
 
 /**
- * Tells the server the user closed the player
+ * Tells the server the user closed the player, with the exact
+ * position so the movie can be resumed there next time
  */
-const stop_watching = async (torrent_id) => {
+const stop_watching = async (torrent_id, time) => {
     try {
-        await axios.delete(`${server}/watching/${torrent_id}`);
+        await axios.delete(`${server}/watching/${torrent_id}`, {
+            data: typeof time === 'number' ? { time } : {},
+        });
     } catch (err) { /* best-effort */ }
 }
 

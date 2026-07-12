@@ -10,7 +10,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import AutoDeleteIcon from '@mui/icons-material/AutoDelete';
 import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
-import { secondsToHms, userColor } from '../utils.js';
+import { secondsToHms, userColor, bytesToHumanReadable } from '../utils.js';
 import LinearProgressWithLabel from './LinearProgressWithLabel.js';
 import DownloadButton from './DownloadButton';
 import { useState } from 'react';
@@ -21,19 +21,19 @@ export default function TorrentCard({ torrent, setTorrents, onPlay, user }) {
     const [isDeleting, setIsDeleting] = useState(false);
     // only the user who added the movie may delete it
     const canDelete = !torrent.owner || torrent.owner === user?.username;
+    // where this user stopped watching last time (ignore the first seconds)
+    const resumeTime = torrent.progress?.[user?.username] || 0;
+    const canResume = resumeTime > 30;
 
     const handleDelete = async () => {
         setIsDeleting(true);
-        
+        // optimistic: drop the card right away; if the server refuses,
+        // the next live status update brings it back
+        setTorrents(torrents => torrents.filter(t => t.id !== torrent.id));
         try {
-            const response = await delete_torrent(torrent.id);
-            if (response.torrents) {
-                setTorrents(response.torrents);
-            }
+            await delete_torrent(torrent.id);
         } catch (error) {
             console.error('Error deleting torrent:', error);
-        } finally {
-            setIsDeleting(false);
         }
     };
 
@@ -47,12 +47,13 @@ export default function TorrentCard({ torrent, setTorrents, onPlay, user }) {
                 {torrent.medium_cover_image ?
                     <CardMedia
                         component="img"
-                        sx={{ width: '7rem', height: '100%' }}
+                        loading="lazy"
+                        sx={{ width: '7rem', height: '100%', objectFit: 'cover' }}
                         image={torrent.medium_cover_image}
                         alt={torrent.title}
                     /> : null}
-                <CardContent sx={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                <CardContent sx={{ display: 'flex', flexDirection: 'row', width: '100%', alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 0.5 }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                                 <Typography component="div"> {torrent.name} </Typography>
@@ -69,22 +70,35 @@ export default function TorrentCard({ torrent, setTorrents, onPlay, user }) {
                                     />
                                 )}
                             </Box>
-                            <Typography variant="subtitle1" color="text.secondary" component="div">
-                                peers: {torrent.peersSendingToUs} seeds: {torrent.peersGettingFromUs} Rate: {torrent.rateDownload} eta: {secondsToHms(torrent.eta / 1000)}
+                            <Typography variant="subtitle2" color="text.secondary" component="div">
+                                {torrent.status === 6 ? (
+                                    <Box component="span" sx={{ color: 'primary.main', fontWeight: 600 }}>
+                                        Ready to watch
+                                    </Box>
+                                ) : (
+                                    <>
+                                        ↓ {bytesToHumanReadable(torrent.rateDownload || 0)}/s
+                                        {' · '}{torrent.peersSendingToUs || 0} peers
+                                        {torrent.eta > 0 && ` · ${secondsToHms(torrent.eta)} left`}
+                                    </>
+                                )}
                             </Typography>
                         </Box>
                         <Box sx={{ width: '100%' }}>
                             <LinearProgressWithLabel value={torrent.percentDone * 100} />
                         </Box>
-                        <Typography marginLeft={0.5} variant="subtitle2" color="text.secondary" component="div">
-                            down: {torrent.downloadedEver} up: {torrent.uploadedEver} total: {torrent.totalSize}
+                        <Typography marginLeft={0.5} variant="caption" color="text.secondary" component="div">
+                            {bytesToHumanReadable(torrent.downloadedEver || 0)} downloaded
+                            {' · '}{bytesToHumanReadable(torrent.uploadedEver || 0)} uploaded
+                            {' · '}{bytesToHumanReadable(torrent.totalSize || 0)} total
                         </Typography>
                     </Box>
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 1,
-                        alignItems: 'flex-end'
+                        alignItems: 'flex-end',
+                        justifyContent: 'center'
                     }}>
                         {torrent.remainingTimeToDeletion !== undefined && (
                             <Tooltip
@@ -147,19 +161,26 @@ export default function TorrentCard({ torrent, setTorrents, onPlay, user }) {
                                     torrent={torrent}
                                 />
                             )}
-                            <IconButton
-                                onClick={() => onPlay(torrent)}
-                                aria-label="play"
-                                size="large"
-                                disabled={torrent.status !== 6}>
-                                <PlayArrowIcon 
-                                    sx={{ 
-                                        width: '2rem', 
-                                        height: '2rem',
-                                        color: torrent.status === 6 ? 'primary' : 'disabled'
-                                    }}
-                                />
-                            </IconButton>
+                            <Tooltip
+                                arrow
+                                title={canResume ? `Resume from ${secondsToHms(Math.floor(resumeTime))}` : ''}
+                            >
+                                <span>
+                                    <IconButton
+                                        onClick={() => onPlay(torrent, canResume ? resumeTime : null)}
+                                        aria-label="play"
+                                        size="large"
+                                        disabled={torrent.status !== 6}>
+                                        <PlayArrowIcon
+                                            sx={{
+                                                width: '2rem',
+                                                height: '2rem',
+                                                color: torrent.status === 6 ? 'primary' : 'disabled'
+                                            }}
+                                        />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
                         </Box>
                     </Box>
                 </CardContent>

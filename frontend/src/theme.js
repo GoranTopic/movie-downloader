@@ -1,6 +1,32 @@
 import { createTheme } from '@mui/material/styles';
 import { grey, yellow, green } from '@mui/material/colors';
 
+// shared component polish for both themes
+const sharedComponents = {
+    MuiCard: {
+        styleOverrides: {
+            root: {
+                borderRadius: 12,
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
+                },
+            },
+        },
+    },
+    MuiButton: {
+        styleOverrides: {
+            root: { borderRadius: 8, textTransform: 'none', fontWeight: 600 },
+        },
+    },
+    MuiLinearProgress: {
+        styleOverrides: {
+            root: { borderRadius: 4, height: 7 },
+        },
+    },
+};
+
 const lightTheme = createTheme({
     palette: {
         mode: 'light',
@@ -25,6 +51,7 @@ const lightTheme = createTheme({
         },
     },
     components: {
+        ...sharedComponents,
         MuiCssBaseline: {
             styleOverrides: {
                 body: {
@@ -40,7 +67,8 @@ const darkTheme = createTheme({
     palette: {
         mode: 'dark',
         primary: {
-            main: green[800],
+            // brighter green pops better on the dark background
+            main: green[600],
         },
         secondary: {
             main: grey[200],
@@ -51,6 +79,7 @@ const darkTheme = createTheme({
         },
     },
     components: {
+        ...sharedComponents,
         MuiCssBaseline: {
             styleOverrides: {
                 body: {

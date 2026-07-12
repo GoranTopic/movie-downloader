@@ -26,6 +26,8 @@ process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 function App() {
     // this is the state of the torrents
     const [torrents, setTorrents] = React.useState([]);
+    // whether the first status update has arrived (drives the skeletons)
+    const [loaded, setLoaded] = React.useState(false);
     // this is the state of the memory
     const [memory, setMemory] = React.useState({});
     // theme state
@@ -61,6 +63,7 @@ function App() {
             if (msg.type === 'status') {
                 if (msg.torrents) setTorrents([...msg.torrents]);
                 if (msg.memory) setMemory({ ...msg.memory });
+                setLoaded(true);
             } else if (msg.type === 'watcher-joined') {
                 setJoinNotice(msg);
             } else if (msg.type === 'connected') {
@@ -91,6 +94,7 @@ function App() {
             // update the state with the new list of torrents
             if (torrents) setTorrents([...torrents]);
             if (memory) setMemory({...memory});
+            setLoaded(true);
             // Clear any existing errors if the request succeeds
             setError({ open: false, message: '' });
         } catch (err) {
@@ -203,7 +207,7 @@ function App() {
                                 color: 'text.primary'
                             }}
                         >
-                            Terac's Movie Downloader
+                            Goran's Movie Downloader
                         </Typography>
                         {user && (
                             <>
@@ -251,6 +255,7 @@ function App() {
                         setTorrents={setTorrents}
                         onPlay={handlePlay}
                         user={user}
+                        loaded={loaded}
                     />
                     <AuthModal
                         open={authOpen}

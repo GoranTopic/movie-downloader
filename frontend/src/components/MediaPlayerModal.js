@@ -223,7 +223,10 @@ export default function MediaPlayerModal({ open, onClose, torrent, startAt }) {
         }, WATCH_HEARTBEAT_MS);
         return () => {
             clearInterval(interval);
-            stop_watching(torrent.id);
+            // hand the final position to the server for resuming later
+            const player = playerRef.current;
+            const finalTime = player && !player.isDisposed() ? player.currentTime() : undefined;
+            stop_watching(torrent.id, finalTime);
         };
     }, [open, torrent]);
 

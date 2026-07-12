@@ -19,13 +19,15 @@ export default function RemoveX({ onDelete, disabled = false, sx = {} }) {
       disabled={disabled}
       sx={{
         position: 'absolute',
-        top: 0,
-        left: 0,
-        color: 'rgba(0, 0, 0, 0.43)',
+        top: 2,
+        left: 2,
+        color: 'text.disabled',
         zIndex: 1,
         padding: '2px',
+        transition: 'color 0.15s ease',
         '&:hover': {
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          color: 'error.main',
+          backgroundColor: 'rgba(255, 255, 255, 0.08)',
         },
         ...sx
       }}

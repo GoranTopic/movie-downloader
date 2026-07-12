@@ -180,6 +180,26 @@ const live_watchers = {};
 // { torrentId: { time, paused, updatedAt } }
 const watch_state = {};
 
+// where each user stopped watching each movie, persisted across restarts:
+// { torrentId: { username: seconds } }
+const PROGRESS_PATH = path.join(process.cwd(), 'data', 'watch-progress.json');
+let watch_progress = {};
+try {
+    watch_progress = JSON.parse(fs.readFileSync(PROGRESS_PATH, 'utf8'));
+} catch {
+    watch_progress = {};
+}
+const save_progress = () => {
+    fs.mkdirSync(path.dirname(PROGRESS_PATH), { recursive: true });
+    fs.writeFileSync(PROGRESS_PATH, JSON.stringify(watch_progress, null, 2));
+}
+const remember_position = (torrent_id, username, time) => {
+    if (typeof time !== 'number' || time <= 0) return;
+    watch_progress[torrent_id] = watch_progress[torrent_id] || {};
+    watch_progress[torrent_id][username] = time;
+    save_progress();
+}
+
 // the current canonical position of a group (time advances while playing)
 const canonical_state = (state) => ({
     time: state.time + (state.paused ? 0 : (Date.now() - state.updatedAt) / 1000),
@@ -222,6 +242,8 @@ app.post('/watching/:torrentId', async (req, res) => {
         paused: !!paused,
         updatedAt: Date.now(),
     };
+    // remember the position so the user can resume here later
+    remember_position(torrent_id, req.user.username, time);
     // tell everyone already watching this movie that someone joined
     if (is_new) {
         const others = new Set(fresh_watchers(torrent_id).map(w => w.username));
@@ -240,10 +262,13 @@ app.post('/watching/:torrentId', async (req, res) => {
     return res.json({ status: 'ok' });
 })
 
-// the user closed the player
+// the user closed the player; the body may carry the exact final position
 app.delete('/watching/:torrentId', (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'login required' });
     const torrent_id = parseInt(req.params.torrentId);
+    // save the precise position at the moment the player was closed
+    if (typeof req.body?.time === 'number')
+        remember_position(torrent_id, req.user.username, req.body.time);
     if (live_watchers[torrent_id])
         delete live_watchers[torrent_id][req.user.username];
     // when the last watcher leaves, forget the shared playback position
@@ -256,7 +281,17 @@ app.delete('/watching/:torrentId', (req, res) => {
 const status_payload = async () => {
     let torrents = await get_torrents();
     let memory = await get_mem_stats(torrents);
-    // attach who is watching each movie, with how stale their position is
+    // drop saved positions of movies that no longer exist
+    const existing = new Set(torrents.map(t => String(t.id)));
+    let pruned = false;
+    for (const key of Object.keys(watch_progress))
+        if (!existing.has(key)) {
+            delete watch_progress[key];
+            pruned = true;
+        }
+    if (pruned) save_progress();
+    // attach who is watching each movie, with how stale their position is,
+    // and where each user last stopped watching
     torrents = torrents.map(t => ({
         ...t,
         watchers: fresh_watchers(t.id).map(w => ({
@@ -265,6 +300,7 @@ const status_payload = async () => {
             paused: w.paused,
             ago: (Date.now() - w.updatedAt) / 1000,
         })),
+        progress: watch_progress[t.id] || {},
     }));
     return { torrents, memory };
 }
