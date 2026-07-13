@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: backend
-          image: movie-downloader-backend:latest
-          imagePullPolicy: Never
+          image: ghcr.io/gorantopic/movie-downloader-backend:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3001
           envFrom:

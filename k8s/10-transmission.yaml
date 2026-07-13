@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: transmission
-          image: movie-downloader-transmission:latest
-          imagePullPolicy: Never
+          image: ghcr.io/gorantopic/movie-downloader-transmission:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9091
               name: rpc
