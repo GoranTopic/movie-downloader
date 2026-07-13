@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: transmission
-          image: ghcr.io/gorantopic/movie-downloader-transmission:ccca665b6bdf004c6d60a5c81ff1780582d309f3
+          image: ghcr.io/gorantopic/movie-downloader-transmission:fdba8b604db494a3f26391edb0e442bb723db49d
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9091
