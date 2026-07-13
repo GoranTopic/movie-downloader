@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: movie-downloader
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: movie-downloader-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: movie-downloader-config
+            - secretRef:
+                name: movie-downloader-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+          volumeMounts:
+            - name: downloads
+              mountPath: /downloads
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: downloads
+          persistentVolumeClaim:
+            claimName: downloads-pvc
+        - name: data
+          persistentVolumeClaim:
+            claimName: backend-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: movie-downloader
+spec:
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 3001
+      targetPort: 3001

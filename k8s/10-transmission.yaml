@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transmission
+  namespace: movie-downloader
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: transmission
+  template:
+    metadata:
+      labels:
+        app: transmission
+    spec:
+      containers:
+        - name: transmission
+          image: movie-downloader-transmission:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 9091
+              name: rpc
+            - containerPort: 51413
+              name: peer-tcp
+              protocol: TCP
+              hostPort: 51413
+            - containerPort: 51413
+              name: peer-udp
+              protocol: UDP
+              hostPort: 51413
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: downloads
+              mountPath: /downloads
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: downloads
+          persistentVolumeClaim:
+            claimName: downloads-pvc
+        - name: config
+          persistentVolumeClaim:
+            claimName: transmission-config-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transmission
+  namespace: movie-downloader
+spec:
+  selector:
+    app: transmission
+  ports:
+    - name: rpc
+      port: 9091
+      targetPort: 9091
