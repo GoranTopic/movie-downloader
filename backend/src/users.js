@@ -154,6 +154,35 @@ const login = (username, password) => {
     return { username: user.username, token: create_user_token(user.username) };
 }
 
+// log in (or create) an account from a verified Google identity.
+// google already proved the email belongs to them, so no
+// verification email is needed
+const google_login = ({ email, name, googleId }) => {
+    email = (email || '').trim().toLowerCase();
+    if (!email) return { error: 'google account has no email address' };
+    let user = users.find(u => u.email && u.email.toLowerCase() === email);
+    if (!user) {
+        // derive a unique username from their google profile name
+        let base = (name || email.split('@')[0])
+            .replace(/[^a-zA-Z0-9_\- ]/g, '').trim().slice(0, 24);
+        if (!base) base = random_username();
+        let username = base;
+        let counter = 2;
+        while (users.find(u => u.username.toLowerCase() === username.toLowerCase()))
+            username = `${base}${counter++}`;
+        user = { username, email, googleId, verified: true, createdAt: Date.now() };
+        users.push(user);
+    } else {
+        // link google to the existing account with this email;
+        // the google sign-in also counts as email verification
+        user.googleId = googleId;
+        user.verified = true;
+        delete user.verifyToken;
+    }
+    save_users();
+    return { username: user.username, token: create_user_token(user.username) };
+}
+
 // create a guest user with a random name and no password,
 // so visitors are identified without having to sign up
 const create_guest = () => {
@@ -163,4 +192,4 @@ const create_guest = () => {
     return { username, guest: true, token: create_user_token(username) };
 }
 
-export { signup, login, create_guest, verify_email, verify_user_token };
+export { signup, login, google_login, create_guest, verify_email, verify_user_token };

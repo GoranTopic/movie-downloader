@@ -10,7 +10,7 @@ import LoadingTorrentCard from './LoadingTorrentCard.js';
 
 // grey placeholder cards shown before the first status arrives
 const SkeletonCard = () => (
-    <Box sx={{ marginY: 1, marginX: '5%' }}>
+    <Box sx={{ marginY: 1, marginX: { xs: 0.5, md: '5%' } }}>
         <Skeleton variant="rounded" height={150} sx={{ borderRadius: 3 }} />
     </Box>
 );

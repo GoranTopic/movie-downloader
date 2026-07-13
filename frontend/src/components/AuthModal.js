@@ -9,7 +9,23 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import { login, signup } from '../auth-cli';
+import Divider from '@mui/material/Divider';
+import { login, signup, google_login, get_auth_config } from '../auth-cli';
+
+// load google's identity services script once
+let gsiScriptPromise = null;
+const loadGsiScript = () => {
+    if (!gsiScriptPromise)
+        gsiScriptPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://accounts.google.com/gsi/client';
+            script.async = true;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    return gsiScriptPromise;
+};
 
 export default function AuthModal({ open, onClose, onAuthenticated }) {
     // 0 = login, 1 = sign up
@@ -20,6 +36,44 @@ export default function AuthModal({ open, onClose, onAuthenticated }) {
     const [error, setError] = React.useState('');
     const [info, setInfo] = React.useState('');
     const [busy, setBusy] = React.useState(false);
+    // where the google button renders (only when the server has a client id)
+    const googleDivRef = React.useRef(null);
+    const [googleReady, setGoogleReady] = React.useState(false);
+
+    React.useEffect(() => {
+        if (!open) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const { googleClientId } = await get_auth_config();
+                if (!googleClientId || cancelled) return;
+                await loadGsiScript();
+                if (cancelled || !googleDivRef.current) return;
+                window.google.accounts.id.initialize({
+                    client_id: googleClientId,
+                    callback: async (response) => {
+                        try {
+                            const user = await google_login(response.credential);
+                            onAuthenticated(user);
+                        } catch (err) {
+                            setError(err.message || 'Google sign-in failed.');
+                        }
+                    },
+                });
+                window.google.accounts.id.renderButton(googleDivRef.current, {
+                    theme: 'outline',
+                    size: 'large',
+                    width: 300,
+                    text: 'continue_with',
+                });
+                setGoogleReady(true);
+            } catch (err) {
+                console.error('Could not set up Google sign-in:', err);
+            }
+        })();
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open]);
 
     const handleSubmit = async (e) => {
         e?.preventDefault();
@@ -59,7 +113,7 @@ export default function AuthModal({ open, onClose, onAuthenticated }) {
                     <Tab label="Sign Up" />
                 </Tabs>
                 <Alert severity="info" sx={{ mb: 2 }}>
-                    Signed-in users keep their movies for 12 hours — guests only get 4.
+                    Signed-in users get 6 movies for 24 hours — guests only 1 movie for 4 hours.
                 </Alert>
                 <Box component="form" onSubmit={handleSubmit}
                     sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -92,6 +146,11 @@ export default function AuthModal({ open, onClose, onAuthenticated }) {
                     {info && <Alert severity="success">{info}</Alert>}
                     {/* hidden submit so pressing Enter works */}
                     <button type="submit" style={{ display: 'none' }} />
+                </Box>
+                {/* google sign-in, shown only when the server has it configured */}
+                <Box sx={{ display: googleReady ? 'block' : 'none' }}>
+                    <Divider sx={{ my: 2 }}>or</Divider>
+                    <Box ref={googleDivRef} sx={{ display: 'flex', justifyContent: 'center' }} />
                 </Box>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>

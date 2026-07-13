@@ -24,7 +24,7 @@ dotenv.config();
 // Use the global DOWNLOADS_PATH from config
 const download_dir = DOWNLOADS_PATH;
 
-const minutesToDeletion = parseInt(process.env.MIN_TO_DELETION) || 720; // minutes, default 12 hours
+const minutesToDeletion = parseInt(process.env.MIN_TO_DELETION) || 1440; // minutes, default 24 hours
 // convert minutes to milliseconds
 const msToDeletion = minutesToDeletion * 60 * 1000
 

@@ -172,8 +172,8 @@ function App() {
     return (
         <NoSsr>
             <MuiThemeProvider theme={theme === 'dark' ? darkTheme : lightTheme}>
-                <Box 
-                    paddingX={'5%'}
+                <Box
+                    paddingX={{ xs: '2%', md: '5%' }}
                     marginBottom={'5%'}
                     backgroundColor='background.default'
                     height='100%'
@@ -191,20 +191,25 @@ function App() {
                         }
                     }}
                 >
-                    <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        width: '100%', 
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: 0.5,
+                        width: '100%',
                         mb: 2,
-                        pt: 3  // Adding top padding
+                        pt: { xs: 2, md: 3 }
                     }}>
-                        <Typography 
-                            variant="h4" 
-                            component="h1" 
-                            sx={{ 
+                        <Typography
+                            variant="h4"
+                            component="h1"
+                            sx={{
                                 flexGrow: 1,
                                 fontWeight: 'bold',
-                                color: 'text.primary'
+                                color: 'text.primary',
+                                // shrink the title so everything fits on a phone
+                                fontSize: { xs: '1.35rem', sm: '1.8rem', md: '2.125rem' },
+                                whiteSpace: 'nowrap',
                             }}
                         >
                             Goran's Movie Downloader
@@ -212,13 +217,15 @@ function App() {
                         {user && (
                             <>
                                 <Chip
+                                    size="small"
                                     icon={<PersonIcon sx={{ color: 'white !important' }} />}
                                     label={user.username}
                                     sx={{
                                         mr: 1,
                                         backgroundColor: userColor(user.username),
                                         color: 'white',
-                                        fontWeight: 'bold'
+                                        fontWeight: 'bold',
+                                        maxWidth: { xs: '9rem', md: 'none' },
                                     }}
                                 />
                                 {user.guest ? (
