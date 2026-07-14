@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Modal, IconButton, Typography } from '@mui/material';
+import { Box, Modal, IconButton, Typography, Tooltip } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ShareIcon from '@mui/icons-material/Share';
+import CheckIcon from '@mui/icons-material/Check';
 import axios from 'axios';
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
 import { report_watching, stop_watching } from '../transmission-cli';
 import { subscribe, send_message } from '../ws-cli';
+import { buildShareLink, copyToClipboard } from '../utils';
 
 // how often the player reports the playback position
 const WATCH_HEARTBEAT_MS = 5000;
@@ -33,6 +36,17 @@ const closeButtonStyle = {
     position: 'absolute',
     top: 16,
     left: 16,
+    color: 'white',
+    '&:hover': {
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    zIndex: 1
+};
+
+const shareButtonStyle = {
+    position: 'absolute',
+    top: 16,
+    right: 16,
     color: 'white',
     '&:hover': {
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -74,6 +88,8 @@ export default function MediaPlayerModal({ open, onClose, torrent, startAt }) {
     const applyingRemote = useRef(false);
     // don't broadcast anything until we've synced with the group
     const readyToEmit = useRef(false);
+    // brief "copied!" feedback on the share button
+    const [shared, setShared] = useState(false);
     // Get the server URL from environment variable or use default
     const serverUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -247,6 +263,21 @@ export default function MediaPlayerModal({ open, onClose, torrent, startAt }) {
         };
     }, []);
 
+    // copy a link to the current movie + current playback position
+    const handleShare = async () => {
+        const player = playerRef.current;
+        const time = player && !player.isDisposed() ? player.currentTime() : 0;
+        const link = buildShareLink(torrent.id, time);
+        const ok = await copyToClipboard(link);
+        if (ok) {
+            setShared(true);
+            setTimeout(() => setShared(false), 2500);
+        } else {
+            // clipboard blocked (e.g. plain-http LAN): show the link to copy manually
+            window.prompt('Copy this link to share this moment:', link);
+        }
+    };
+
     return (
         <Modal
             open={open}
@@ -261,6 +292,12 @@ export default function MediaPlayerModal({ open, onClose, torrent, startAt }) {
                 >
                     <ArrowBackIcon />
                 </IconButton>
+
+                <Tooltip title={shared ? 'Link copied!' : 'Share from this moment'} arrow>
+                    <IconButton onClick={handleShare} sx={shareButtonStyle} aria-label="share">
+                        {shared ? <CheckIcon /> : <ShareIcon />}
+                    </IconButton>
+                </Tooltip>
 
                 {error && (
                     <Typography sx={errorStyle}>

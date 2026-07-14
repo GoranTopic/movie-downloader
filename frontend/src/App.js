@@ -7,7 +7,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import PersonIcon from '@mui/icons-material/Person';
 import { lightTheme, darkTheme } from './theme.js'
-import { userColor } from './utils.js';
+import { userColor, parseShareLink } from './utils.js';
 import { query_status, transmision_add_torrent } from './transmission-cli.js';
 import { get_stored_user, check_session, guest_login, logout } from './auth-cli.js';
 import { connect_socket, disconnect_socket, subscribe, socket_connected } from './ws-cli.js';
@@ -45,6 +45,8 @@ function App() {
     const [authOpen, setAuthOpen] = React.useState(false);
     // "X is now watching with you" notification
     const [joinNotice, setJoinNotice] = React.useState(null);
+    // a pending "watch from a shared link" request (parsed from the URL once)
+    const [pendingShare, setPendingShare] = React.useState(() => parseShareLink());
 
     React.useEffect(() => {
         // validate the stored session; if there is none (or it expired),
@@ -86,6 +88,24 @@ function App() {
     React.useEffect(() => {
         if (user) connect_socket();
     }, [user]);
+
+    // if the page was opened from a share link, start the movie at the
+    // shared time as soon as it shows up in the list and is ready to play
+    React.useEffect(() => {
+        if (!pendingShare || !loaded) return;
+        const torrent = torrents.find(t => t.id === pendingShare.id);
+        if (torrent && torrent.status === 6) {
+            handlePlay(torrent, pendingShare.t);
+        } else if (torrent) {
+            setError({ open: true, message: 'The shared movie is still downloading — try the link again in a bit.' });
+        } else {
+            setError({ open: true, message: 'The shared movie is no longer available.' });
+        }
+        // consume the request and clean the URL so a refresh won't reopen it
+        setPendingShare(null);
+        window.history.replaceState({}, '', window.location.pathname);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pendingShare, loaded, torrents]);
 
     // update the list of torrents
     const update_app = async () => {
