@@ -116,13 +116,18 @@ export default function MediaPlayerModal({ open, onClose, torrent, startAt }) {
             videoElement.classList.add('vjs-big-play-centered');
             containerRef.current.appendChild(videoElement);
 
-            // all downloaded subtitle tracks are handed to the player at setup
+            // all downloaded subtitle tracks are handed to the player at setup.
+            // crossOrigin is required so iOS/iPadOS — which uses the native
+            // player and loads subtitle tracks natively — can fetch the .vtt
+            // files that live on the backend's (different) origin. without it
+            // the native CC menu shows no subtitles.
             const player = videojs(videoElement, {
                 autoplay: true,
                 controls: true,
                 responsive: true,
                 fluid: true,
                 playsinline: true,
+                crossOrigin: 'anonymous',
                 sources: [{
                     src: mediaFilePath,
                     type: 'video/mp4'
@@ -130,6 +135,8 @@ export default function MediaPlayerModal({ open, onClose, torrent, startAt }) {
                 tracks: subtitleTracks,
             });
             playerRef.current = player;
+            // some iOS versions ignore the option, so also set it on the element
+            player.crossOrigin('anonymous');
 
             // when joining someone else's session, start where they are
             if (startAt)
