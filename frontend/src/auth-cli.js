@@ -37,6 +37,20 @@ const signup = async (username, password, email) => {
     return res.data; // { status: 'verification-sent', username, email }
 }
 
+// which optional auth providers the server has configured
+const get_auth_config = async () => {
+    const res = await axios.get(`${server}/auth/config`);
+    return res.data;
+}
+
+// finish a "Sign in with Google" flow with the credential from the button
+const google_login = async (credential) => {
+    const res = await axios.post(`${server}/auth/google`, { credential });
+    if (res.data.error) throw new Error(res.data.error);
+    store_user(res.data);
+    return res.data;
+}
+
 // get a guest identity with a random name (no password needed)
 const guest_login = async () => {
     const res = await axios.post(`${server}/auth/guest`);
@@ -74,4 +88,4 @@ const logout = () => {
     set_user_header(null);
 }
 
-export { signup, login, guest_login, logout, get_stored_user, check_session };
+export { signup, login, google_login, guest_login, logout, get_stored_user, check_session, get_auth_config };

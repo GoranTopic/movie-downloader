@@ -5,13 +5,13 @@ import { get_torrent, query_movie, query_movie_suggestions } from './yify-server
 import path from 'path';
 import fs from 'fs';
 import { DOWNLOADS_PATH } from './config.js';
-import archiver from 'archiver';
 const app = express();
 import { get_mem_stats, check_memeory } from './system.js';
 import { get_torrents, add_torrent, add_time, delete_torrent, update_torrent } from './transmission-cli.js';
 import { downloadAllSubtitles } from './ytsSubtitleApi.js';
-import { signup, login, create_guest, verify_email, verify_user_token } from './users.js';
+import { signup, login, google_login, create_guest, verify_email, verify_user_token } from './users.js';
 import { send_verification_email } from './mailer.js';
+import { OAuth2Client } from 'google-auth-library';
 import { WebSocketServer } from 'ws';
 import dotenv from 'dotenv';
 // load the environment variables
@@ -45,10 +45,12 @@ app.use((req, res, next) => {
         console.log('Preflight request received');
         return next(); // Skip token check for preflight
     }
-    // Skip token check for media and stream endpoints,
+    // Skip token check for media, stream and download endpoints
+    // (downloads are plain browser navigations, which can't send headers),
     // and for the email verification link (opened straight from the inbox)
     if (req.url.startsWith('/media/') ||
         req.url.startsWith('/stream/') ||
+        req.url.startsWith('/download/') ||
         req.url.startsWith('/auth/verify/')) {
         return next();
     }
@@ -91,6 +93,39 @@ app.post('/auth/signup', async (req, res) => {
     });
 })
 
+// ---- sign in with google ----
+// create the OAuth client id at console.cloud.google.com and put it in
+// GOOGLE_CLIENT_ID; the frontend hides the google button when it's not set
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
+
+// tells the frontend which auth options are available
+app.get('/auth/config', (req, res) => {
+    return res.json({ googleClientId: GOOGLE_CLIENT_ID });
+})
+
+// the google sign-in button posts its ID token here; we verify it
+// against google's keys and log the user in (creating them if needed)
+app.post('/auth/google', async (req, res) => {
+    if (!googleClient)
+        return res.json({ error: 'google sign-in is not configured on this server' });
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken: req.body?.credential,
+            audience: GOOGLE_CLIENT_ID,
+        });
+        const profile = ticket.getPayload();
+        return res.json(google_login({
+            email: profile.email,
+            name: profile.name || profile.given_name,
+            googleId: profile.sub,
+        }));
+    } catch (err) {
+        console.error('Google sign-in failed:', err.message);
+        return res.json({ error: 'google sign-in failed, please try again' });
+    }
+})
+
 // the link from the verification email lands here
 app.get('/auth/verify/:verifyToken', (req, res) => {
     const result = verify_email(req.params.verifyToken);
@@ -127,11 +162,13 @@ app.get('/search/:term', async (req, res) => {
     return res.json(response);
 });
 
-// how many movies each user can have at the same time
-const MAX_MOVIES_PER_USER = parseInt(process.env.MAX_MOVIES_PER_USER) || 2;
+// how many movies each user can have at the same time:
+// signed-in members get 6, guests only 1
+const MAX_MOVIES_MEMBER = parseInt(process.env.MAX_MOVIES_PER_USER) || 6;
+const MAX_MOVIES_GUEST = parseInt(process.env.GUEST_MAX_MOVIES) || 1;
 
-// how long movies live: signed-in users get 12 hours, guests only 4
-const MEMBER_LIFESPAN_MS = (parseInt(process.env.MIN_TO_DELETION) || 720) * 60 * 1000;
+// how long movies live: signed-in users get 24 hours, guests only 4
+const MEMBER_LIFESPAN_MS = (parseInt(process.env.MIN_TO_DELETION) || 1440) * 60 * 1000;
 const GUEST_LIFESPAN_MS = (parseInt(process.env.GUEST_MIN_TO_DELETION) || 240) * 60 * 1000;
 
 app.post('/yify/add', async function (req, res) {
@@ -139,9 +176,14 @@ app.post('/yify/add', async function (req, res) {
     if (!req.user)
         return res.status(401).json({ error: 'login required' });
     // each user can only have a limited number of movies at once
+    const max_movies = req.user.guest ? MAX_MOVIES_GUEST : MAX_MOVIES_MEMBER;
     const own_torrents = (await get_torrents()).filter(t => t.owner === req.user.username);
-    if (own_torrents.length >= MAX_MOVIES_PER_USER)
-        return res.json({ error: `You already have ${MAX_MOVIES_PER_USER} movies. Delete one to download another.` });
+    if (own_torrents.length >= max_movies)
+        return res.json({
+            error: req.user.guest
+                ? `Guests can only have ${MAX_MOVIES_GUEST} movie at a time — sign in to get ${MAX_MOVIES_MEMBER}.`
+                : `You already have ${MAX_MOVIES_MEMBER} movies. Delete one to download another.`
+        });
     // get the url of the torrent from the request
     if (req.body?.movie_id && req.body?.quality) {
         const { movie_id, quality } = req.body;
@@ -323,60 +365,55 @@ app.post('/add_time', async function (req, res) {
     }
 })
 
-// Add endpoint for downloading movie files
-app.get('/download/:filename', async (req, res) => {
-    const filename = decodeURIComponent(req.params.filename);
-    const filePath = path.join(DOWNLOADS_PATH, filename);
-    
-    // Check if path exists
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'File not found' });
-    }
+// find the actual movie file of a torrent: the torrent's path itself
+// when it is a single file, otherwise the largest video file inside
+const find_media_file = (torrent) => {
+    const filePath = path.join(DOWNLOADS_PATH, torrent.name);
+    if (!fs.existsSync(filePath)) return null;
+    if (!fs.statSync(filePath).isDirectory()) return filePath;
 
-    // If it's a directory, create a zip file
-    if (fs.statSync(filePath).isDirectory()) {
-        try {
-            // Create a zip archive
-            const archive = archiver('zip', {
-                zlib: { level: 9 } // Maximum compression
-            });
-
-            // Set the response headers
-            res.setHeader('Content-Type', 'application/zip');
-            res.setHeader('Content-Disposition', `attachment; filename="${filename}.zip"`);
-
-            // Pipe the archive to the response
-            archive.pipe(res);
-
-            // Add the directory to the archive
-            archive.directory(filePath, false);
-
-            // Finalize the archive
-            await archive.finalize();
-
-            // Handle archive errors
-            archive.on('error', (err) => {
-                console.error('Archive error:', err);
-                if (!res.headersSent) {
-                    res.status(500).json({ error: 'Error creating archive' });
-                }
-            });
-        } catch (error) {
-            console.error('Error creating zip:', error);
-            if (!res.headersSent) {
-                res.status(500).json({ error: 'Error creating zip file' });
-            }
+    const videoExtensions = ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm'];
+    const mediaFiles = [];
+    const findFiles = (dir) => {
+        for (const file of fs.readdirSync(dir)) {
+            const fullPath = path.join(dir, file);
+            const stat = fs.statSync(fullPath);
+            if (stat.isDirectory()) findFiles(fullPath);
+            else if (videoExtensions.includes(path.extname(file).toLowerCase()))
+                mediaFiles.push({ path: fullPath, size: stat.size });
         }
-    } else {
-        // If it's a file, download it directly
-        res.download(filePath, filename, (err) => {
-            if (err) {
+    };
+    findFiles(filePath);
+    if (mediaFiles.length === 0) return null;
+    return mediaFiles.reduce((prev, current) =>
+        prev.size > current.size ? prev : current).path;
+};
+
+// download the movie file itself, streamed straight from disk.
+// no zipping: instant start, real Content-Length so the browser shows
+// progress, and Range support so downloads can pause and resume
+app.get('/download/:torrentId', async (req, res) => {
+    try {
+        const torrentId = parseInt(req.params.torrentId);
+        if (isNaN(torrentId))
+            return res.status(400).json({ error: 'Invalid torrent ID' });
+        const torrents = await get_torrents();
+        const torrent = torrents.find(t => t.id === torrentId);
+        if (!torrent)
+            return res.status(404).json({ error: 'Torrent not found' });
+        const mediaFilePath = find_media_file(torrent);
+        if (!mediaFilePath)
+            return res.status(404).json({ error: 'No media file found' });
+        res.download(mediaFilePath, path.basename(mediaFilePath), (err) => {
+            if (err && !res.headersSent) {
                 console.error('Error downloading file:', err);
-                if (!res.headersSent) {
-                    res.status(500).json({ error: 'Error downloading file' });
-                }
+                res.status(500).json({ error: 'Error downloading file' });
             }
         });
+    } catch (error) {
+        console.error('Download error:', error);
+        if (!res.headersSent)
+            res.status(500).json({ error: 'Error downloading file' });
     }
 });
 
@@ -396,51 +433,11 @@ app.get('/stream/:torrentId', async (req, res) => {
             return res.status(404).json({ error: 'Torrent not found' });
         }
 
-        // Get the file path from the torrent
-        const filePath = path.join(DOWNLOADS_PATH, torrent.name);
-        console.log('Looking for file at:', filePath);
-        
-        // Check if path exists
-        if (!fs.existsSync(filePath)) {
-            console.error('File not found:', filePath);
-            return res.status(404).json({ error: 'File not found' });
-        }
-
-        let mediaFilePath = filePath;
-        
-        // If it's a directory, find the largest media file and all subtitle files
-        if (fs.statSync(filePath).isDirectory()) {
-            const mediaFiles = [];
-            const videoExtensions = ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm'];
-            
-            // Recursively find all media and subtitle files
-            const findFiles = (dir) => {
-                const files = fs.readdirSync(dir);
-                files.forEach(file => {
-                    const fullPath = path.join(dir, file);
-                    const stat = fs.statSync(fullPath);
-                    if (stat.isDirectory()) {
-                        findFiles(fullPath);
-                    } else {
-                        const ext = path.extname(file).toLowerCase();
-                        if (videoExtensions.includes(ext)) {
-                            mediaFiles.push({ path: fullPath, size: stat.size });
-                        } 
-                    }
-                });
-            };
-
-            findFiles(filePath);
-            
-            if (mediaFiles.length === 0) {
-                console.error('No media files found in directory');
-                return res.status(404).json({ error: 'No media files found' });
-            }
-
-            // Find the largest file
-            mediaFilePath = mediaFiles.reduce((prev, current) => 
-                (prev.size > current.size) ? prev : current
-            ).path;
+        // Find the movie file (single file, or largest video in the folder)
+        const mediaFilePath = find_media_file(torrent);
+        if (!mediaFilePath) {
+            console.error('No media files found for torrent:', torrent.name);
+            return res.status(404).json({ error: 'No media files found' });
         }
 
         // Convert absolute paths to relative paths

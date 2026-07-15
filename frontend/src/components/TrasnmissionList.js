@@ -10,7 +10,7 @@ import LoadingTorrentCard from './LoadingTorrentCard.js';
 
 // grey placeholder cards shown before the first status arrives
 const SkeletonCard = () => (
-    <Box sx={{ marginY: 1, marginX: '5%' }}>
+    <Box sx={{ marginY: 1, marginX: { xs: 0.5, md: '5%' } }}>
         <Skeleton variant="rounded" height={150} sx={{ borderRadius: 3 }} />
     </Box>
 );
@@ -35,6 +35,11 @@ export default function TrasnmissionList({ torrents, setTorrents, onPlay, user, 
             </Box>
         );
 
+    // the user's own movies come first; the sort is stable, so the
+    // original (added) order is preserved within each group
+    const sorted = [...torrents].sort((a, b) =>
+        (a.owner === user?.username ? 0 : 1) - (b.owner === user?.username ? 0 : 1));
+
     return <>
         <Grid container
             sx={{ marginTop: 1 }}
@@ -42,7 +47,7 @@ export default function TrasnmissionList({ torrents, setTorrents, onPlay, user, 
             direction="column" justifyContent="space-evenly"
             rowSpacing={10}>
             { /* for each torrent map to torent card */}
-            {torrents.map(torrent => torrent.status === "loading" ?
+            {sorted.map(torrent => torrent.status === "loading" ?
                 <LoadingTorrentCard key={torrent.id + torrent.imdb_code} torrent={torrent} /> :
                 <Grow in={true} key={torrent.id} timeout={350}>
                     <div>

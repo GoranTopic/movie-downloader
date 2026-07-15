@@ -7,7 +7,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import PersonIcon from '@mui/icons-material/Person';
 import { lightTheme, darkTheme } from './theme.js'
-import { userColor } from './utils.js';
+import { userColor, parseShareLink } from './utils.js';
 import { query_status, transmision_add_torrent } from './transmission-cli.js';
 import { get_stored_user, check_session, guest_login, logout } from './auth-cli.js';
 import { connect_socket, disconnect_socket, subscribe, socket_connected } from './ws-cli.js';
@@ -45,6 +45,8 @@ function App() {
     const [authOpen, setAuthOpen] = React.useState(false);
     // "X is now watching with you" notification
     const [joinNotice, setJoinNotice] = React.useState(null);
+    // a pending "watch from a shared link" request (parsed from the URL once)
+    const [pendingShare, setPendingShare] = React.useState(() => parseShareLink());
 
     React.useEffect(() => {
         // validate the stored session; if there is none (or it expired),
@@ -86,6 +88,24 @@ function App() {
     React.useEffect(() => {
         if (user) connect_socket();
     }, [user]);
+
+    // if the page was opened from a share link, start the movie at the
+    // shared time as soon as it shows up in the list and is ready to play
+    React.useEffect(() => {
+        if (!pendingShare || !loaded) return;
+        const torrent = torrents.find(t => t.id === pendingShare.id);
+        if (torrent && torrent.status === 6) {
+            handlePlay(torrent, pendingShare.t);
+        } else if (torrent) {
+            setError({ open: true, message: 'The shared movie is still downloading — try the link again in a bit.' });
+        } else {
+            setError({ open: true, message: 'The shared movie is no longer available.' });
+        }
+        // consume the request and clean the URL so a refresh won't reopen it
+        setPendingShare(null);
+        window.history.replaceState({}, '', window.location.pathname);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pendingShare, loaded, torrents]);
 
     // update the list of torrents
     const update_app = async () => {
@@ -172,8 +192,8 @@ function App() {
     return (
         <NoSsr>
             <MuiThemeProvider theme={theme === 'dark' ? darkTheme : lightTheme}>
-                <Box 
-                    paddingX={'5%'}
+                <Box
+                    paddingX={{ xs: '2%', md: '5%' }}
                     marginBottom={'5%'}
                     backgroundColor='background.default'
                     height='100%'
@@ -191,20 +211,25 @@ function App() {
                         }
                     }}
                 >
-                    <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        width: '100%', 
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: 0.5,
+                        width: '100%',
                         mb: 2,
-                        pt: 3  // Adding top padding
+                        pt: { xs: 2, md: 3 }
                     }}>
-                        <Typography 
-                            variant="h4" 
-                            component="h1" 
-                            sx={{ 
+                        <Typography
+                            variant="h4"
+                            component="h1"
+                            sx={{
                                 flexGrow: 1,
                                 fontWeight: 'bold',
-                                color: 'text.primary'
+                                color: 'text.primary',
+                                // shrink the title so everything fits on a phone
+                                fontSize: { xs: '1.35rem', sm: '1.8rem', md: '2.125rem' },
+                                whiteSpace: 'nowrap',
                             }}
                         >
                             Goran's Movie Downloader
@@ -212,13 +237,15 @@ function App() {
                         {user && (
                             <>
                                 <Chip
+                                    size="small"
                                     icon={<PersonIcon sx={{ color: 'white !important' }} />}
                                     label={user.username}
                                     sx={{
                                         mr: 1,
                                         backgroundColor: userColor(user.username),
                                         color: 'white',
-                                        fontWeight: 'bold'
+                                        fontWeight: 'bold',
+                                        maxWidth: { xs: '9rem', md: 'none' },
                                     }}
                                 />
                                 {user.guest ? (

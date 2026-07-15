@@ -1,44 +1,21 @@
 import * as React from 'react';
 import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import CircularProgress from '@mui/material/CircularProgress';
-import Box from '@mui/material/Box';
 import { fetch_download } from '../media-cli.js'
 
 export default function DownloadButton({ torrent }) {
-    const [loading, setLoading] = React.useState(false);
-
-    const handleDownload = async () => {
-        setLoading(true);
-        // You might want to show an error message to the user here
-        await fetch_download(torrent.name);
-        setLoading(false);
-    };
-
     return (
-        <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+        <Tooltip title="Download to this device" arrow>
             <IconButton
-                onClick={handleDownload}
+                onClick={() => fetch_download(torrent)}
                 aria-label="download"
-                size="large"
-                disabled={loading}>
-                <FileDownloadIcon 
+                size="large">
+                <FileDownloadIcon
                     sx={{ width: '2rem', height: '2rem' }}
-                    color="primary" 
+                    color="primary"
                 />
             </IconButton>
-            {loading && (
-                <CircularProgress
-                    size={48}
-                    sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        marginTop: '-24px',
-                        marginLeft: '-24px',
-                    }}
-                />
-            )}
-        </Box>
+        </Tooltip>
     );
-} 
+}

@@ -39,7 +39,7 @@ export default function TorrentCard({ torrent, setTorrents, onPlay, user }) {
 
     return (
         // move it to the most left
-        <Card sx={{ display: 'flex', flexDirection: 'column', marginY: 1, marginX: "5%", position: 'relative' }}>
+        <Card sx={{ display: 'flex', flexDirection: 'column', marginY: 1, marginX: { xs: 0.5, md: '5%' }, position: 'relative' }}>
             {/* Use the RemoveX component,  move RemoveX to the most left */}
             {canDelete && <RemoveX onDelete={handleDelete} disabled={isDeleting} />}
 
@@ -48,15 +48,27 @@ export default function TorrentCard({ torrent, setTorrents, onPlay, user }) {
                     <CardMedia
                         component="img"
                         loading="lazy"
-                        sx={{ width: '7rem', height: '100%', objectFit: 'cover' }}
+                        sx={{ width: { xs: '5rem', md: '7rem' }, height: '100%', objectFit: 'cover', flexShrink: 0 }}
                         image={torrent.medium_cover_image}
                         alt={torrent.title}
                     /> : null}
-                <CardContent sx={{ display: 'flex', flexDirection: 'row', width: '100%', alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 0.5 }}>
+                <CardContent sx={{
+                    display: 'flex',
+                    // on phones the actions move below the info instead of beside it
+                    flexDirection: { xs: 'column', md: 'row' },
+                    width: '100%',
+                    minWidth: 0,
+                    alignItems: { xs: 'stretch', md: 'center' },
+                    gap: { xs: 1, md: 0 },
+                    padding: { xs: 1.5, md: 2 },
+                }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, gap: 0.5 }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                <Typography component="div"> {torrent.name} </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', minWidth: 0 }}>
+                                <Typography component="div" sx={{
+                                    fontSize: { xs: '0.9rem', md: '1rem' },
+                                    wordBreak: 'break-word',
+                                }}> {torrent.name} </Typography>
                                 {torrent.owner && (
                                     <Chip
                                         icon={<PersonIcon sx={{ color: 'white !important' }} />}
@@ -95,10 +107,13 @@ export default function TorrentCard({ torrent, setTorrents, onPlay, user }) {
                     </Box>
                     <Box sx={{
                         display: 'flex',
-                        flexDirection: 'column',
+                        // phone: one horizontal row under the info; desktop: right-side column
+                        flexDirection: { xs: 'row', md: 'column' },
                         gap: 1,
-                        alignItems: 'flex-end',
-                        justifyContent: 'center'
+                        alignItems: 'center',
+                        justifyContent: { xs: 'space-between', md: 'center' },
+                        width: { xs: '100%', md: 'auto' },
+                        flexShrink: 0,
                     }}>
                         {torrent.remainingTimeToDeletion !== undefined && (
                             <Tooltip

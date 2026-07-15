@@ -23,7 +23,7 @@ export default function LinearProgressMemory({ used, claimed, total, torrents = 
         <Box sx={{ marginX: '5%', marginBottom: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
             <Tooltip title={tooltip} arrow>
                 <Box sx={{
-                    width: '40%',
+                    width: { xs: '100%', md: '40%' },
                     height: 10,
                     borderRadius: 5,
                     backgroundColor: 'action.hover',

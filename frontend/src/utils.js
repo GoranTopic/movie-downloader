@@ -37,4 +37,50 @@ const userColor = (username) => {
     return `hsl(${hue}, 65%, 45%)`;
 }
 
-export { secondsToHms, getPercentageOf, bytesToHumanReadable, userColor }
+// build a shareable link that opens a movie at a given time.
+// uses the current page URL so it works behind any base path / domain
+const buildShareLink = (torrentId, timeSeconds) => {
+    const url = new URL(window.location.href);
+    // drop any existing share params, keep the rest of the path/base
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('movie', torrentId);
+    url.searchParams.set('t', Math.max(0, Math.floor(timeSeconds || 0)));
+    return url.toString();
+}
+
+// read a share request (movie id + start time) from the current URL
+const parseShareLink = () => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('movie')) return null;
+    const id = parseInt(params.get('movie'));
+    const t = parseInt(params.get('t'));
+    if (isNaN(id)) return null;
+    return { id, t: isNaN(t) ? 0 : t };
+}
+
+// copy text to the clipboard, with a fallback for non-secure contexts
+const copyToClipboard = async (text) => {
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+    } catch { /* fall through to the legacy path */ }
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+    } catch {
+        return false;
+    }
+}
+
+export { secondsToHms, getPercentageOf, bytesToHumanReadable, userColor, buildShareLink, parseShareLink, copyToClipboard }

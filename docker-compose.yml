@@ -44,14 +44,17 @@ services:
             DOWNLOADS_PATH: /downloads
             TRANSMISSION_HOST: transmission
             TRANSMISSION_PORT: 9091
-            MIN_TO_DELETION: 720
+            MIN_TO_DELETION: 1440
             GUEST_MIN_TO_DELETION: 240
-            MAX_MOVIES_PER_USER: 2
+            MAX_MOVIES_PER_USER: 6
+            GUEST_MAX_MOVIES: 1
             SMTP_HOST: mailserver
             SMTP_PORT: 1025
             MAIL_FROM: "Movie Downloader <no-reply@movie-downloader.local>"
             # must be reachable from the user's browser (verification links)
             PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
+            # sign in with google (optional, from console.cloud.google.com)
+            GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
         volumes:
             - downloads:/downloads
             - backend-data:/app/data

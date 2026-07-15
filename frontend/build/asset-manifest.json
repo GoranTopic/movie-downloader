@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/Movie_Downloader/static/css/main.4af35782.css",
-    "main.js": "/Movie_Downloader/static/js/main.3f2e6f74.js",
+    "main.js": "/Movie_Downloader/static/js/main.b1c0d446.js",
     "static/js/453.73c95c9a.chunk.js": "/Movie_Downloader/static/js/453.73c95c9a.chunk.js",
     "index.html": "/Movie_Downloader/index.html",
     "main.4af35782.css.map": "/Movie_Downloader/static/css/main.4af35782.css.map",
-    "main.3f2e6f74.js.map": "/Movie_Downloader/static/js/main.3f2e6f74.js.map",
+    "main.b1c0d446.js.map": "/Movie_Downloader/static/js/main.b1c0d446.js.map",
     "453.73c95c9a.chunk.js.map": "/Movie_Downloader/static/js/453.73c95c9a.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.4af35782.css",
-    "static/js/main.3f2e6f74.js"
+    "static/js/main.b1c0d446.js"
   ]
 }

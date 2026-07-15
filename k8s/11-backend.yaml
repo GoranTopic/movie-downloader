@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ghcr.io/gorantopic/movie-downloader-backend:ccca665b6bdf004c6d60a5c81ff1780582d309f3
+          image: ghcr.io/gorantopic/movie-downloader-backend:192650328365006455576f9d79eeda226114986b
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3001

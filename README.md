@@ -16,6 +16,16 @@ docker compose up -d --build
 
 Set `TOKEN`, `AUTH_SECRET` and `PUBLIC_API_URL` in a `.env` file next to `docker-compose.yml` for real deployments. The bundled mailserver (Mailpit) keeps emails in a local inbox at :8025; to deliver to real mailboxes, point the backend's `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS` at a real SMTP relay instead.
 
+## Sign in with Google (optional)
+
+1. Go to https://console.cloud.google.com → create/select a project → **APIs & Services → Credentials**.
+2. First time only: configure the **OAuth consent screen** (External, app name, your email; add users as test users or publish).
+3. **Create Credentials → OAuth client ID → Web application.**
+4. Under **Authorized JavaScript origins** add every URL the site is served from, e.g. `http://localhost:3000` and your public URL.
+5. Copy the client ID (ends in `.apps.googleusercontent.com`) into `GOOGLE_CLIENT_ID` (backend `.env` or the compose `.env`), restart the backend — a "Continue with Google" button appears in the sign-in dialog automatically.
+
+Google accounts skip email verification (Google already verified the address); signing in with Google using the email of an existing account links them.
+
 ## Project Structure
 
 ```
