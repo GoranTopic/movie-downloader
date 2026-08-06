@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: yachanki-kichua
+  namespace: yachanki-kichua
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - kichwa.gorantopic.com
+      secretName: yachanki-kichua-tls
+  rules:
+    - host: kichwa.gorantopic.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: yachanki-kichua
+                port:
+                  number: 80

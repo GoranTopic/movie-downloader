@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+  namespace: yachanki-kichua
+data:
+  default.conf: |
+    server {
+        listen 80;
+        root /site/current;
+        index index.html;
+        location / {
+            try_files $uri $uri/ =404;
+        }
+    }
