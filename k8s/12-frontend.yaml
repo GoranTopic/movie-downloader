@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/gorantopic/movie-downloader-frontend:192650328365006455576f9d79eeda226114986b
+          image: ghcr.io/gorantopic/movie-downloader-frontend:1576da1f13b5218a083f6e3e6724f412a768af26
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
