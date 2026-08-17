@@ -20,6 +20,7 @@
     "os": "^0.1.2",
     "path": "^0.12.7",
     "react": "^18.2.0",
+    "react-app-polyfill": "^3.0.0",
     "react-dom": "^18.2.0",
     "react-player": "^2.16.0",
     "react-scripts": "5.0.1",
@@ -32,6 +33,9 @@
     "server": "npx serve -s build -l 80",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:compat": "node tests/compat/bundle-syntax.mjs",
+    "test:browsers": "playwright test",
+    "test:tv": "playwright test --project=samsung-tv-2020 --project=samsung-tv-2022 --project=samsung-tv-2024",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -44,12 +48,18 @@
     "production": [
       ">0.2%",
       "not dead",
-      "not op_mini all"
+      "not op_mini all",
+      "chrome >= 63"
     ],
     "development": [
       "last 1 chrome version",
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "acorn": "^8.18.0",
+    "serve": "^14.2.6"
   }
 }

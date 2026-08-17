@@ -1,3 +1,8 @@
+// Must come first: it installs the core-js built-ins that Samsung TV browsers
+// predate. Babel rewrites new *syntax* for old engines by itself, but missing
+// *methods* only exist if this polyfill entry is imported before anything else.
+// See tests/README.md for the supported TV floor.
+import 'react-app-polyfill/stable';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
